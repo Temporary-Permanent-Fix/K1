@@ -30,7 +30,7 @@ const T = {
   bg: "#0E1117", panel: "#161B22", panel2: "#0D1117", border: "#30363D",
   borderSoft: "#21262D", text: "#E6EDF3", text2: "#C9D1D9", muted: "#8B949E",
   dim: "#6E7681", green: "#00b84a", greenDeep: "#00963C", greenLink: "#55df36",
-  amber: "#D29922", red: "#F85149", slate: "#3D444D",
+  amber: "#D29922", red: "#F85149", slate: "#3D444D", blue: "#378ADD",
 };
 const STATUS = {
   Done: T.green, Prebieha: T.amber, Blocked: T.red, "Out of scope": T.dim, Nezačaté: T.slate,
@@ -40,6 +40,14 @@ const SEVERITIES = ["Nízka", "Stredná", "Vysoká", "Kritická"];
 const BUG_STATUS = ["Otvorený", "V riešení", "Vyriešený"];
 const SEV_COLOR = { "Nízka": T.dim, "Stredná": T.amber, "Vysoká": T.red, "Kritická": T.red };
 const BUGST_COLOR = { "Otvorený": T.red, "V riešení": T.amber, "Vyriešený": T.green };
+const TEST_STATUS = ["TBD", "IN TESTING", "Done"];
+const TS_COLOR = { "Done": T.green, "IN TESTING": T.amber, "TBD": T.red, "": T.slate };
+const CATS = [["func", "Funkčné"], ["sec", "Bezpečnostné"], ["perf", "Výkonnostné"]];
+const CAT_LABEL = { func: "Funkčné", sec: "Bezpečnostné", perf: "Výkonnostné" };
+const PRIO_WEIGHT = { CRITICAL: 3, HIGH: 2, MEDIUM: 1, LOW: 0.5, "": 1 };
+const TEST_PRIOS = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
+const ENVS = ["MOCK", "HW"];
+const PHASE_OPTS = ["F0", "F1", "F0/F1"];
 
 /* ───────────────────────── utils ───────────────────────── */
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
@@ -126,51 +134,26 @@ function seedProjects() {
         ]),
       ]),
     ],
-    cycles: [
-      {
-        id: uid(), name: "Cyklus 1", from: "2026-08-19", to: "2026-08-30",
-        tests: [
-          mkTest("Dekantácia mix palety — put-to-light", "Manuálna dekantácia",
-            "Po umiestnení posledného kusu put-to-light zhasne a paleta sa potvrdí.",
-            "OK", "test@alza.cz", [L(JIRA_BASE + "LOG-36042")],
-            [attempt("Prešlo bez problému", true), attempt("Prešlo", true)]),
-        ],
-      },
-      {
-        id: uid(), name: "Cyklus 2", from: "2026-09-01", to: "2026-09-12",
-        tests: [
-          mkTest("Dekantácia mix palety — put-to-light", "Manuálna dekantácia",
-            "Po umiestnení posledného kusu put-to-light zhasne a paleta sa potvrdí.",
-            "BUG", "test@alza.cz", [L(JIRA_BASE + "LOG-36042")],
-            [attempt("Put-to-light zhaslo, potvrdenie OK", true),
-             attempt("Svetlo zostalo svietiť, timeout", false),
-             attempt("OK bez problému", true),
-             attempt("Paleta uviazla na stanici", false)]),
-          mkTest("Async naskladnenie do 4DS po skene", "Automatická dekantácia",
-            "Po skene SSCC prebehne async naskladnenie do 4DS bez chyby.",
-            "BUG", "test@alza.cz", [L(JIRA_BASE + "LOG-36301")],
-            [attempt("Chyba príjmu, neúplný zápis", false)]),
-        ],
-      },
+    scenarios: [
+      { id: uid(), code: "TC-F-001", name: "Dekantácia mix palety — put-to-light", category: "func", process: "Manuálna dekantácia", phase: "F0", env: "MOCK", status: "IN TESTING", priority: "HIGH", preconditions: "", steps: "", expected: "Po umiestnení posledného kusu put-to-light zhasne a paleta sa potvrdí.", spracuje: "Alza", links: [L(JIRA_BASE + "LOG-36042")], attempts: [] },
     ],
+    rounds: ["Kolo 1"],
+    phases: [{ key: "F0", planned: "", original: "" }, { key: "F1", planned: "2026-09-15", original: "2026-09-15" }],
   };
   return [p4ds];
-}
-function attempt(text, ok) { return { id: uid(), text, ok, at: new Date().toISOString().slice(0, 10) }; }
-function mkTest(name, area, expected, result, testerEmail, links, attempts) {
-  return { id: uid(), name, area, expected, result, testerEmail, links, attempts: attempts || [] };
 }
 // Jira status -> app bucket (pre farbu v diagrame/prehľade)
 function bucketOf(status, type) {
   const s = String(status || "").toLowerCase();
   if ((type || "").toLowerCase() === "bug" && s !== "closed" && s !== "done") return "Blocked";
   if (["closed", "done", "hotovo"].includes(s)) return "Done";
-  if (["code review", "final testing", "developing", "in progress", "prebieha"].some((x) => s.includes(x))) return "Prebieha";
+  if (["code review", "final testing", "testing", "developing", "in progress", "prebieha", "analyzing", "waiting", "validation", "fixing", "to be fixed", "review"].some((x) => s.includes(x))) return "Prebieha";
   if (["postponed", "odložené"].includes(s)) return "Out of scope";
   return "Nezačaté";
 }
+const originOf = (key) => (/^KVD-/i.test(String(key || "")) ? "supplier" : "internal");
 const issue = (key, summary, status, assignee, type, epic) =>
-  ({ key, summary, status, assignee, type, epic, url: JIRA_BASE + key });
+  ({ key, summary, status, assignee, type, epic, origin: originOf(key), url: JIRA_BASE + key });
 function seedIssues() {
   return [
     issue("LOG-33440", "Modul pravidiel smerovania paliet", "Open", "Simona Fratila", "Story", "Smerovanie"),
@@ -214,21 +197,6 @@ function evalTest(t) {
   const pct = n ? Math.round((ok / n) * 100) : null;
   return { n, ok, fail: n - ok, pct };
 }
-function cycleStats(cycle) {
-  const tests = cycle.tests || [];
-  const res = { total: tests.length, OK: 0, BUG: 0, Blocked: 0, Out: 0, pct: null };
-  let done = 0;
-  tests.forEach((t) => {
-    if (t.result === "OK") res.OK++;
-    else if (t.result === "BUG") res.BUG++;
-    else if (t.result === "Blocked") res.Blocked++;
-    else if (t.result === "Out of scope") res.Out++;
-    if (t.result) done++;
-  });
-  res.pct = tests.length ? Math.round((res.OK / tests.length) * 100) : null;
-  res.done = done;
-  return res;
-}
 function projectReadiness(pr) {
   let total = 0, sum = 0;
   (pr.groups || []).forEach((g) => g.processes.forEach((p) => {
@@ -249,12 +217,65 @@ function statusSplit(pr) {
 function openBugs(pr) {
   let n = 0;
   (pr.groups || []).forEach((g) => g.processes.forEach((p) => p.steps.forEach((s) => (s.bugs || []).forEach((b) => { if ((b.status || "Otvorený") !== "Vyriešený") n++; }))));
+  (pr.issues || []).forEach((i) => { if ((i.type || "").toLowerCase() === "bug" && !["closed", "done"].includes((i.status || "").toLowerCase())) n++; });
   return n;
 }
 function daysTo(dateStr) {
   if (!dateStr) return null;
-  const d = Math.ceil((new Date(dateStr) - new Date()) / 86400000);
-  return d;
+  return Math.ceil((new Date(dateStr) - new Date()) / 86400000);
+}
+function scenStats(pr) {
+  const sc = pr.scenarios || [];
+  const st = { total: sc.length, Done: 0, "IN TESTING": 0, TBD: 0 };
+  sc.forEach((s) => { const k = s.status || "TBD"; st[k] = (st[k] || 0) + 1; });
+  st.pct = sc.length ? Math.round((st.Done / sc.length) * 100) : 0;
+  return st;
+}
+function catStats(pr, cat) {
+  const sc = (pr.scenarios || []).filter((s) => s.category === cat);
+  return { total: sc.length, done: sc.filter((s) => s.status === "Done").length, inTesting: sc.filter((s) => s.status === "IN TESTING").length };
+}
+function phaseMatrix(pr) {
+  const m = {};
+  (pr.scenarios || []).filter((s) => s.category === "func").forEach((s) => {
+    const ph = s.phase || "F0", env = s.env || "MOCK", stt = s.status || "TBD";
+    ((m[ph] ||= {})[env] ||= { Done: 0, "IN TESTING": 0, TBD: 0, total: 0 });
+    m[ph][env][stt]++; m[ph][env].total++;
+  });
+  return m;
+}
+function priorityReadiness(pr) {
+  let w = 0, wd = 0;
+  (pr.scenarios || []).forEach((s) => { const pwt = PRIO_WEIGHT[(s.priority || "").toUpperCase()] ?? 1; w += pwt; if (s.status === "Done") wd += pwt; });
+  return w ? Math.round((wd / w) * 100) : 0;
+}
+function devReadiness(pr) {
+  const iss = (pr.issues || []).filter((i) => (i.status || "").toLowerCase() !== "postponed");
+  if (!iss.length) return projectReadiness(pr);
+  const done = iss.filter((i) => ["closed", "done"].includes((i.status || "").toLowerCase())).length;
+  return Math.round((done / iss.length) * 100);
+}
+function issueSplit(pr) {
+  const iss = pr.issues || []; const t = iss.length || 1;
+  const pc = (f) => Math.round((iss.filter(f).length / t) * 100);
+  const done = pc((i) => ["closed", "done"].includes((i.status || "").toLowerCase()));
+  const bug = pc((i) => (i.type || "").toLowerCase() === "bug" && !["closed", "done"].includes((i.status || "").toLowerCase()));
+  const postp = pc((i) => (i.status || "").toLowerCase() === "postponed");
+  const prog = pc((i) => bucketOf(i.status, i.type) === "Prebieha" && (i.type || "").toLowerCase() !== "bug");
+  const nez = Math.max(0, 100 - done - bug - postp - prog);
+  return { total: iss.length, done, prog, bug, nez };
+}
+function processTestState(pr, procName) {
+  const sc = (pr.scenarios || []).filter((s) => s.process === procName);
+  if (!sc.length) return { color: T.slate, label: "—", done: 0, total: 0 };
+  const done = sc.filter((s) => s.status === "Done").length;
+  const inT = sc.filter((s) => s.status === "IN TESTING").length;
+  return { color: done === sc.length ? T.green : (done + inT) > 0 ? T.amber : T.red, label: `${done}/${sc.length}`, done, total: sc.length };
+}
+function openBugList(pr) {
+  const out = [];
+  (pr.issues || []).forEach((i) => { if ((i.type || "").toLowerCase() === "bug" && !["closed", "done"].includes((i.status || "").toLowerCase())) out.push({ key: i.key, title: i.summary, url: i.url, origin: i.origin || originOf(i.key), status: i.status }); });
+  return out;
 }
 
 /* ───────────────────────── small UI ───────────────────────── */
@@ -463,7 +484,7 @@ function ProjectView({ project, setProject, me, tab, setTab }) {
         </div>
       </div>
       <div style={{ padding: "14px 16px" }}>
-        {tab === "prehlad" && <Prehlad project={project} />}
+        {tab === "prehlad" && <Prehlad project={project} setProject={setProject} />}
         {tab === "tok" && <ProcesnyTok project={project} setProject={setProject} />}
         {tab === "test" && <Testovanie project={project} setProject={setProject} me={me} />}
         {tab === "jira" && <OdkazyTab project={project} />}
@@ -476,71 +497,157 @@ function ProjectView({ project, setProject, me, tab, setTab }) {
 }
 
 /* ── Prehľad ── */
-function Prehlad({ project }) {
-  const r = projectReadiness(project); const s = statusSplit(project); const d = daysTo(project.milestoneDate);
-  const bugs = openBugs(project);
-  const today = new Date().toLocaleDateString("sk-SK");
-  const areas = project.groups.map((g) => {
-    let tot = 0, sum = 0;
-    g.processes.forEach((p) => { tot++; sum += p.status === "Done" ? 1 : p.status === "Prebieha" ? 0.5 : 0; });
-    const pct = tot ? Math.round((sum / tot) * 100) : 0;
-    const col = pct >= 75 ? T.greenDeep : pct >= 40 ? T.amber : pct > 0 ? T.red : T.dim;
-    return { name: g.name, pct, col };
-  });
-  const lastBugs = [];
-  project.groups.forEach((g) => g.processes.forEach((p) => p.steps.forEach((st) =>
-    (st.bugs || []).forEach((b) => { if ((b.status || "Otvorený") !== "Vyriešený") lastBugs.push({ ...b, link: (st.links || []).find(isJiraLink) }); }))));
+function PhaseCell({ title, count, m }) {
+  const rows = [["Done", "Done"], ["IN TESTING", "IN testing"], ["TBD", "TBD"]];
   return (
-    <div>
-      <div style={{ ...card, padding: "15px 16px", marginBottom: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ minWidth: 170 }}>
-            <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 6 }}>Celková pripravenosť projektu</div>
-            <div style={{ fontSize: 40, fontWeight: 500, color: T.green, lineHeight: 1 }}>{r}%</div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 11.5, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 10px" }}><Calendar size={14} color={T.muted} />stav k {today}</div>
+    <div style={{ background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, overflow: "hidden" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 9px", background: T.panel, borderBottom: `1px solid ${T.border}`, fontSize: 11 }}><span style={{ fontWeight: 500 }}>{title}</span><span style={{ color: T.muted }}>{count}</span></div>
+      <div style={{ padding: "4px 0" }}>
+        {rows.map(([k, lbl]) => {
+          const v = (m && m[k]) || 0; const pct = count ? Math.round((v / count) * 100) : 0;
+          return <div key={k} style={{ display: "flex", alignItems: "center", padding: "3px 9px", fontSize: 11 }}>
+            <span style={{ flex: 1, color: TS_COLOR[k] }}>{lbl}</span><span style={{ width: 26, textAlign: "right" }}>{v}</span><span style={{ width: 40, textAlign: "right", color: T.muted }}>{pct}%</span>
+          </div>;
+        })}
+      </div>
+    </div>
+  );
+}
+function PhasesCard({ project, setProject }) {
+  const phases = project.phases || [];
+  const setPhase = (key, patch) => setProject((pr) => ({ ...pr, phases: (pr.phases || []).map((p) => (p.key === key ? { ...p, ...patch } : p)) }));
+  const addPhase = () => setProject((pr) => ({ ...pr, phases: [...(pr.phases || []), { key: "F" + (pr.phases || []).length, planned: "", original: "" }] }));
+  const delPhase = (key) => setProject((pr) => ({ ...pr, phases: (pr.phases || []).filter((p) => p.key !== key) }));
+  const di = { background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "5px 7px", color: T.text, fontSize: 12, outline: "none", colorScheme: "dark" };
+  const slip = (p) => {
+    if (!p.planned || !p.original) return null;
+    return Math.round((new Date(p.planned) - new Date(p.original)) / 86400000);
+  };
+  return (
+    <div style={{ ...card, padding: "13px 14px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <div style={{ fontSize: 13, fontWeight: 500 }}>Fázy a termíny</div>
+        <span onClick={addPhase} style={{ fontSize: 11.5, color: T.green, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}><Plus size={13} />Fáza</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 1fr 90px 24px", gap: 8, fontSize: 10.5, color: T.muted, padding: "0 2px" }}>
+          <span>Fáza</span><span>Termín</span><span>Pôvodný termín</span><span>Sklz</span><span></span>
+        </div>
+        {phases.map((p) => {
+          const s = slip(p); const dTo = daysTo(p.planned);
+          return (
+            <div key={p.key} style={{ display: "grid", gridTemplateColumns: "60px 1fr 1fr 90px 24px", gap: 8, alignItems: "center" }}>
+              <input value={p.key} onChange={(e) => setPhase(p.key, { key: e.target.value })} style={{ ...di, fontWeight: 500 }} />
+              <input type="date" value={p.planned || ""} onChange={(e) => setPhase(p.key, { planned: e.target.value })} style={di} />
+              <input type="date" value={p.original || ""} onChange={(e) => setPhase(p.key, { original: e.target.value })} style={{ ...di, color: T.muted }} />
+              <span style={{ fontSize: 11 }}>{s == null ? "—" : s === 0 ? <span style={{ color: T.muted }}>na termín</span> : s > 0 ? <span style={{ color: T.red }}>+{s} dní</span> : <span style={{ color: T.green }}>{s} dní</span>}</span>
+              <Trash2 size={13} color={T.dim} style={{ cursor: "pointer" }} onClick={() => delPhase(p.key)} />
+            </div>
+          );
+        })}
+        {phases.length === 0 && <div style={{ fontSize: 12, color: T.dim }}>Žiadne fázy. Pridaj F0/F1 tlačidlom vyššie.</div>}
+      </div>
+      <div style={{ fontSize: 10.5, color: T.dim, marginTop: 9 }}>Termín = aktuálny plán, Pôvodný termín = baseline. Sklz = rozdiel v dňoch (červená = neskôr).</div>
+    </div>
+  );
+}
+function Prehlad({ project, setProject }) {
+  const today = new Date().toLocaleDateString("sk-SK");
+  const dev = devReadiness(project); const isp = issueSplit(project);
+  const ss = scenStats(project); const pw = priorityReadiness(project); const pm = phaseMatrix(project);
+  const logBugs = openBugList(project).filter((b) => b.origin === "internal").length;
+  const kvdBugs = openBugList(project).filter((b) => b.origin === "supplier").length;
+  const lastBugs = openBugList(project);
+  const env = (ph, e) => (pm[ph] && pm[ph][e]) || { total: 0 };
+  const nextPhase = (project.phases || []).filter((p) => p.planned).map((p) => ({ ...p, d: daysTo(p.planned) })).filter((p) => p.d != null && p.d >= 0).sort((a, b) => a.d - b.d)[0];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+      <div style={{ background: T.panel, border: `1px solid ${T.borderSoft}`, borderLeft: `3px solid ${T.green}`, borderRadius: "0 12px 12px 0", padding: "14px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><Workflow size={16} color={T.green} /><span style={{ fontSize: 13, fontWeight: 500 }}>VÝVOJ</span><span style={{ fontSize: 11, color: T.muted }}>— Jira / procesy</span><span style={{ marginLeft: "auto", fontSize: 11, color: T.muted, display: "inline-flex", alignItems: "center", gap: 5 }}><Calendar size={13} />stav k {today}</span></div>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
+          <div style={{ minWidth: 130 }}>
+            <div style={{ fontSize: 38, fontWeight: 500, color: T.green, lineHeight: 1 }}>{dev}%</div>
+            <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>pripravenosť vývoja</div>
+            {nextPhase && <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 9, fontSize: 11, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 9px" }}><Flag size={13} color={T.green} />{nextPhase.key} · {nextPhase.d != null ? `o ${nextPhase.d} dní` : ""}</div>}
           </div>
           <div style={{ flex: 1, minWidth: 230 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: T.muted, marginBottom: 6 }}><span>Rozloženie stavu ({s.total} procesov)</span><span>{project.milestoneName}</span></div>
-            <SplitBar s={s} h={12} />
-            <div style={{ display: "flex", gap: 12, marginTop: 9, fontSize: 10.5, color: T.muted, flexWrap: "wrap" }}>
-              <Leg c={T.greenDeep} t={`hotové ${s.done}%`} /><Leg c={T.amber} t={`prebieha ${s.prebieha}%`} />
-              <Leg c={T.red} t={`blokované ${s.blocked}%`} /><Leg c={T.slate} t={`nezačaté ${s.nezacate}%`} />
+            <div style={{ fontSize: 11, color: T.muted, marginBottom: 6 }}>Stav issues ({isp.total})</div>
+            <div style={{ display: "flex", height: 11, borderRadius: 99, overflow: "hidden", background: T.borderSoft }}>
+              <div style={{ width: isp.done + "%", background: T.greenDeep }} /><div style={{ width: isp.prog + "%", background: T.amber }} /><div style={{ width: isp.bug + "%", background: T.red }} /><div style={{ width: isp.nez + "%", background: T.slate }} />
             </div>
-            {project.milestoneDate && <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 11, fontSize: 11.5, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 11px" }}><Flag size={14} color={T.green} /><span>{project.milestoneName} · {new Date(project.milestoneDate).toLocaleDateString("sk-SK")}</span><span style={{ color: T.muted }}>·</span><span style={{ color: T.amber }}>{d != null ? `o ${d} dní` : ""}</span></div>}
+            <div style={{ display: "flex", gap: 12, marginTop: 8, fontSize: 10.5, color: T.muted, flexWrap: "wrap" }}>
+              <Leg c={T.greenDeep} t={`hotové ${isp.done}%`} /><Leg c={T.amber} t={`prebieha ${isp.prog}%`} /><Leg c={T.red} t={`bug ${isp.bug}%`} /><Leg c={T.slate} t={`nezačaté ${isp.nez}%`} />
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 11, flexWrap: "wrap", fontSize: 11 }}>
+              <span style={{ background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "5px 9px" }}>Interné bugy <b style={{ color: logBugs ? T.red : T.text }}>{logBugs}</b></span>
+              <span style={{ background: T.panel2, border: `1px dashed ${T.amber}`, borderRadius: 7, padding: "5px 9px", color: T.amber }}>KVADOS bugy <b>{kvdBugs}</b></span>
+            </div>
           </div>
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 10, marginBottom: 16 }}>
-        <Metric label="Procesy" value={s.total} />
-        <Metric label="Hotové" value={s.done + "%"} color={T.green} />
-        <Metric label="Otvorené bugy" value={bugs} color={bugs ? T.red : T.text} />
-        <Metric label="Cykly" value={(project.cycles || []).length} />
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr", gap: 12 }}>
-        <div style={{ ...card, padding: "13px 14px", minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 12 }}>Priebeh podľa oblastí</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-            {areas.map((a) => (
-              <div key={a.name}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}><span>{a.name}</span><span style={{ color: T.muted }}>{a.pct}%</span></div>
-                <div style={{ height: 7, background: T.borderSoft, borderRadius: 99, overflow: "hidden" }}><div style={{ height: "100%", width: Math.max(a.pct, 2) + "%", background: a.col }} /></div>
-              </div>
-            ))}
-            {areas.length === 0 && <div style={{ color: T.dim, fontSize: 12 }}>Zatiaľ žiadne oblasti.</div>}
+
+      <div style={{ background: T.panel, border: `1px solid ${T.borderSoft}`, borderLeft: `3px solid ${T.blue}`, borderRadius: "0 12px 12px 0", padding: "14px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><ListChecks size={16} color={T.blue} /><span style={{ fontSize: 13, fontWeight: 500 }}>TESTY</span><span style={{ fontSize: 11, color: T.muted }}>— {ss.total} test casov (test-based)</span></div>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start", marginBottom: 14 }}>
+          <div style={{ minWidth: 130 }}>
+            <div style={{ fontSize: 38, fontWeight: 500, color: T.blue, lineHeight: 1 }}>{ss.pct}%</div>
+            <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>hotové testy ({ss.Done}/{ss.total})</div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 9, fontSize: 11, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 9px" }}><Target size={13} color={T.amber} />prioritne vážené: <b style={{ color: T.amber }}>{pw}%</b></div>
+          </div>
+          <div style={{ flex: 1, minWidth: 230, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 11, color: T.muted }}>Pokrytie podľa kategórie</div>
+            {CATS.map(([c, lbl]) => { const cs = catStats(project, c); const pct = cs.total ? Math.round((cs.done / cs.total) * 100) : 0; return (
+              <div key={c}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, marginBottom: 3 }}><span>{lbl}</span><span style={{ color: T.muted }}>{cs.done} / {cs.total}</span></div><div style={{ height: 6, background: T.borderSoft, borderRadius: 99, overflow: "hidden" }}><div style={{ height: "100%", width: Math.max(pct, 2) + "%", background: pct > 0 ? T.greenDeep : T.slate }} /></div></div>
+            ); })}
           </div>
         </div>
-        <div style={{ ...card, padding: "13px 14px", minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 10 }}>Posledné bugy</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 9, fontSize: 12 }}>
-            {lastBugs.slice(0, 6).map((b) => (
-              <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                <span style={{ width: 7, height: 7, borderRadius: 99, background: b.severity === "Kritická" || b.severity === "Vysoká" ? T.red : T.amber, flex: "none" }} />
-                {b.link && <LinkChip link={b.link} />}
-                <span style={{ color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.title}</span>
+        <div style={{ fontSize: 11, color: T.muted, marginBottom: 8 }}>Analýza fáz — F0/F1 × MOCK/HW × status</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
+          <PhaseCell title="F0 · MOCK" count={env("F0", "MOCK").total} m={env("F0", "MOCK")} />
+          <PhaseCell title="F0 · HW" count={env("F0", "HW").total} m={env("F0", "HW")} />
+          <PhaseCell title="F1 · MOCK" count={env("F1", "MOCK").total} m={env("F1", "MOCK")} />
+          <PhaseCell title="F1 · HW" count={env("F1", "HW").total} m={env("F1", "HW")} />
+        </div>
+      </div>
+
+      <PhasesCard project={project} setProject={setProject} />
+
+      <div style={{ ...card, padding: "13px 14px" }}>
+        <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 12 }}>Heatmapa procesov <span style={{ fontSize: 11, color: T.muted, fontWeight: 400 }}>— stav testov</span></div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {project.groups.map((g) => (
+            <div key={g.id}>
+              <div style={{ fontSize: 11, color: T.muted, marginBottom: 6 }}>{g.name}</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {g.processes.map((p) => { const ts = processTestState(project, p.name); return (
+                  <span key={p.id} title={`${p.name} · ${ts.label}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, background: T.panel2, border: `1px solid ${T.border}`, borderLeft: `3px solid ${ts.color}`, borderRadius: 6, padding: "4px 8px", maxWidth: 240 }}>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span><span style={{ color: T.muted }}>{ts.label}</span>
+                  </span>
+                ); })}
               </div>
-            ))}
-            {lastBugs.length === 0 && <div style={{ color: T.dim }}>Žiadne bugy.</div>}
-          </div>
+            </div>
+          ))}
+          {project.groups.length === 0 && <div style={{ color: T.dim, fontSize: 12 }}>Zatiaľ žiadne procesy.</div>}
+        </div>
+        <div style={{ display: "flex", gap: 14, marginTop: 12, fontSize: 10.5, color: T.muted, flexWrap: "wrap" }}>
+          <Leg c={T.green} t="všetko Done" /><Leg c={T.amber} t="prebieha" /><Leg c={T.red} t="TBD" /><Leg c={T.slate} t="bez testov" />
+        </div>
+      </div>
+
+      <div style={{ ...card, padding: "13px 14px" }}>
+        <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 10 }}>Otvorené bugy ({lastBugs.length})</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 9, fontSize: 12 }}>
+          {lastBugs.slice(0, 8).map((b) => (
+            <div key={b.key} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <span style={{ width: 7, height: 7, borderRadius: 99, background: b.origin === "supplier" ? T.amber : T.red, flex: "none" }} />
+              <a href={b.url} target="_blank" rel="noopener noreferrer" style={{ color: T.greenLink, textDecoration: "none", fontFamily: "ui-monospace,monospace", fontSize: 11.5, flex: "none" }}>{b.key}</a>
+              {b.origin === "supplier" && <span style={{ fontSize: 8, color: T.amber, border: `1px solid ${T.amber}`, borderRadius: 4, padding: "0 3px", flex: "none" }}>KVADOS</span>}
+              <span style={{ color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.title}</span>
+              <span style={{ color: T.dim, fontSize: 10.5, flex: "none" }}>{b.status}</span>
+            </div>
+          ))}
+          {lastBugs.length === 0 && <div style={{ color: T.dim }}>Žiadne otvorené bugy.</div>}
         </div>
       </div>
     </div>
@@ -553,6 +660,14 @@ function ProcesnyTok({ project, setProject }) {
   const [view, setView] = useState("zoznam");
   const [edit, setEdit] = useState(false);
   const [collapsed, setCollapsed] = useState({});
+  const [navW, setNavW] = useState(220);
+  const startDrag = (e) => {
+    e.preventDefault();
+    const startX = e.clientX, startW = navW;
+    const move = (ev) => setNavW(Math.max(150, Math.min(520, startW + ev.clientX - startX)));
+    const up = () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
+    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+  };
   const setGroupIT = (gid, key, val) => setProject((pr) => ({ ...pr, groups: pr.groups.map((g) => (g.id === gid ? { ...g, integrationTests: { ...(g.integrationTests || {}), [key]: val } } : g)) }));
   const [sel, setSel] = useState(project.groups[0]?.processes[0]?.id || null);
   const selProc = useMemo(() => {
@@ -600,8 +715,8 @@ function ProcesnyTok({ project, setProject }) {
       </div>
 
       {view === "zoznam" ? (
-        <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 0, border: `1px solid ${T.borderSoft}`, borderRadius: 10, overflow: "hidden" }}>
-          <div style={{ borderRight: `1px solid ${T.borderSoft}`, padding: "12px 10px", minWidth: 0 }}>
+        <div style={{ display: "grid", gridTemplateColumns: `${navW}px 6px 1fr`, gap: 0, border: `1px solid ${T.borderSoft}`, borderRadius: 10, overflow: "hidden" }}>
+          <div style={{ padding: "12px 10px", minWidth: 0, overflowX: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "5px 8px", marginBottom: 10 }}>
               <Search size={13} color={T.muted} />
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="hľadať…" style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none", color: T.text, fontSize: 11.5 }} />
@@ -645,6 +760,7 @@ function ProcesnyTok({ project, setProject }) {
             })}
             {edit && <button onClick={addGroup} style={{ width: "100%", marginTop: 4, background: T.panel2, border: `1px dashed ${T.border}`, color: T.green, borderRadius: 8, padding: "7px", cursor: "pointer", fontSize: 12, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}><Plus size={14} />Celok</button>}
           </div>
+          <div onMouseDown={startDrag} title="Potiahni pre zmenu šírky" style={{ cursor: "col-resize", background: T.borderSoft, borderLeft: `1px solid ${T.border}`, borderRight: `1px solid ${T.border}` }} />
           <div style={{ padding: "14px 16px", minWidth: 0 }}>
             {selProc ? <FlowDetail entry={selProc} edit={edit} issues={project.issues || []} onUpdate={(fn) => updateProc(setProject, selProc.p.id, fn)} onDelete={() => deleteProcess(selProc.p.id)} /> : <div style={{ color: T.dim }}>Vyber proces.</div>}
           </div>
@@ -684,17 +800,22 @@ function FlowDetail({ entry, onUpdate, onDelete, edit, issues = [] }) {
             <input value={p.name} onChange={(e) => onUpdate((x) => ({ ...x, name: e.target.value }))} style={{ ...inp, fontSize: 14, fontWeight: 500, flex: 1, minWidth: 160 }} />
             <select value={p.status} onChange={(e) => onUpdate((x) => ({ ...x, status: e.target.value }))} style={{ ...inp, appearance: "auto" }}>{STATUS_OPTS.map((s) => <option key={s}>{s}</option>)}</select>
             <select value={p.priority || ""} onChange={(e) => onUpdate((x) => ({ ...x, priority: e.target.value }))} title="Priorita" style={{ ...inp, appearance: "auto" }}>{PRIORITIES.map((s) => <option key={s} value={s}>{s || "priorita —"}</option>)}</select>
+            <select value={p.phase || "F0"} onChange={(e) => onUpdate((x) => ({ ...x, phase: e.target.value }))} title="Fáza spustenia" style={{ ...inp, appearance: "auto" }}>{PHASE_OPTS.map((s) => <option key={s}>{s}</option>)}</select>
             <button onClick={onDelete} title="Zmazať proces" style={{ ...nb, color: T.red }}><Trash2 size={15} /></button>
           </>
         ) : (
           <><span style={{ fontSize: 15, fontWeight: 500 }}>{p.name}</span>{statusPill(p.status)}
+            {p.phase && <Pill bg={"rgba(55,138,221,.15)"} fg={T.blue}>{p.phase}</Pill>}
             {p.priority && <Pill bg={T.panel2} fg={PRIO_COLOR[p.priority] || T.dim}>priorita: {p.priority}</Pill>}</>
         )}
       </div>
       {edit ? (
-        <input value={p.description} placeholder="popis procesu…" onChange={(e) => onUpdate((x) => ({ ...x, description: e.target.value }))} style={{ ...inp, width: "100%", boxSizing: "border-box", marginBottom: 14 }} />
+        <input value={p.description} placeholder="jednoduchý popis — o čo tam ide…" onChange={(e) => onUpdate((x) => ({ ...x, description: e.target.value }))} style={{ ...inp, width: "100%", boxSizing: "border-box", marginBottom: 14 }} />
       ) : (
-        <div style={{ fontSize: 11.5, color: T.muted, marginBottom: 14 }}>{g.name}{p.description ? " · " + p.description : ""}</div>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 11, color: T.dim, marginBottom: p.description ? 4 : 0 }}>{g.name}</div>
+          {p.description && <div style={{ fontSize: 12.5, color: T.text2, lineHeight: 1.5, background: T.panel2, border: `1px solid ${T.borderSoft}`, borderRadius: 8, padding: "8px 11px" }}>{p.description}</div>}
+        </div>
       )}
 
       <div style={{ display: "flex", flexDirection: "column" }}>
@@ -781,7 +902,14 @@ function StepEditor({ st, inp, nb, issues, onSet, onDel, onMove, onAddLink, onDe
 /* ── Diagram (vlastný render z dát) ── */
 function nodeColor(status) { return STATUS[status] || T.slate; }
 function DiagramView({ project }) {
-  const issues = project.issues || [];
+  const allIssues = project.issues || [];
+  const [orig, setOrig] = useState("all"); // all | internal | supplier
+  const issues = useMemo(() => orig === "all" ? allIssues : allIssues.filter((i) => (i.origin || originOf(i.key)) === orig), [allIssues, orig]);
+  const counts = useMemo(() => ({
+    all: allIssues.length,
+    internal: allIssues.filter((i) => (i.origin || originOf(i.key)) === "internal").length,
+    supplier: allIssues.filter((i) => (i.origin || originOf(i.key)) === "supplier").length,
+  }), [allIssues]);
   const cols = useMemo(() => {
     const map = {};
     issues.forEach((it) => { const k = it.epic || "Bez oblasti"; (map[k] ||= []).push(it); });
@@ -789,8 +917,13 @@ function DiagramView({ project }) {
   }, [issues]);
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 7, marginBottom: 10 }}>
-        <span style={{ fontSize: 11, color: T.green, background: "rgba(0,184,74,.1)", border: `1px solid rgba(0,184,74,.35)`, borderRadius: 8, padding: "5px 9px", display: "inline-flex", alignItems: "center", gap: 5 }}><RefreshCw size={13} />auto-sync · {issues.length} Jira uzlov</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+        <div style={{ display: "inline-flex", background: T.panel, border: `1px solid ${T.border}`, borderRadius: 9, padding: 3, gap: 3 }}>
+          {[["all", "Všetko"], ["internal", "Interné"], ["supplier", "KVADOS"]].map(([k, lbl]) => (
+            <span key={k} onClick={() => setOrig(k)} style={{ fontSize: 11.5, padding: "5px 11px", borderRadius: 7, cursor: "pointer", background: orig === k ? T.green : "transparent", color: orig === k ? T.bg : T.muted, fontWeight: orig === k ? 500 : 400 }}>{lbl} <span style={{ opacity: .7 }}>{counts[k]}</span></span>
+          ))}
+        </div>
+        <span style={{ fontSize: 11, color: T.green, background: "rgba(0,184,74,.1)", border: `1px solid rgba(0,184,74,.35)`, borderRadius: 8, padding: "5px 9px", display: "inline-flex", alignItems: "center", gap: 5 }}><RefreshCw size={13} />auto-sync · {issues.length} uzlov</span>
       </div>
       {issues.length === 0 ? (
         <div style={{ background: T.panel2, border: `1px dashed ${T.border}`, borderRadius: 10, padding: 24, textAlign: "center", color: T.muted, fontSize: 12.5 }}>
@@ -805,8 +938,9 @@ function DiagramView({ project }) {
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {list.map((it) => {
                     const c = nodeColor(bucketOf(it.status, it.type));
-                    return <a key={it.key} href={it.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", background: T.panel, border: `1px solid ${c}`, borderLeft: `3px solid ${c}`, borderRadius: 7, padding: "7px 8px" }}>
-                      <div style={{ fontSize: 10.5, fontFamily: "ui-monospace,monospace", color: T.greenLink }}>{it.key}{it.type === "Bug" ? " 🐞" : ""}</div>
+                    const sup = (it.origin || originOf(it.key)) === "supplier";
+                    return <a key={it.key} href={it.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", background: T.panel, border: `1px ${sup ? "dashed" : "solid"} ${c}`, borderLeft: `3px solid ${c}`, borderRadius: 7, padding: "7px 8px" }}>
+                      <div style={{ fontSize: 10.5, fontFamily: "ui-monospace,monospace", color: T.greenLink, display: "flex", alignItems: "center", gap: 5 }}>{it.key}{it.type === "Bug" ? " 🐞" : ""}{sup && <span style={{ fontSize: 8, color: T.amber, border: `1px solid ${T.amber}`, borderRadius: 4, padding: "0 3px" }}>KVADOS</span>}</div>
                       <div style={{ fontSize: 9.5, color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.summary}</div>
                     </a>;
                   })}
@@ -816,7 +950,7 @@ function DiagramView({ project }) {
           </div>
         </div>
       )}
-      <div style={{ marginTop: 10, fontSize: 10.5, color: T.dim, display: "flex", alignItems: "center", gap: 5 }}>Diagram sa generuje z importovaných Jira issues (zoskupené podľa Epicu) — nový import/zmena stavu sa premietne aj sem a do exportu .drawio. Iné odkazy (Asana…) uzol netvoria.</div>
+      <div style={{ marginTop: 10, fontSize: 10.5, color: T.dim, display: "flex", alignItems: "center", gap: 5 }}><span style={{ fontSize: 8, color: T.amber, border: `1px solid ${T.amber}`, borderRadius: 4, padding: "0 3px" }}>KVADOS</span> = dodávateľ (KVD), prerušovaný rám · plný rám = interné (LOG). Diagram sa generuje z Jira issues, zoskupené podľa Epicu.</div>
     </div>
   );
 }
@@ -844,192 +978,165 @@ function downloadDrawio(project) {
 }
 
 /* ── Testovanie (cykly + testy + pokusy) ── */
+/* ── Testovanie (scenáre podľa kategórie + procesu, F0/F1, MOCK/HW) ── */
 function Testovanie({ project, setProject, me }) {
-  const cycles = project.cycles || [];
-  const [selCycle, setSelCycle] = useState(cycles[cycles.length - 1]?.id || null);
-  const [openTest, setOpenTest] = useState(null);
-  const cycle = cycles.find((c) => c.id === selCycle) || cycles[cycles.length - 1] || null;
+  const [cat, setCat] = useState("func");
+  const [fPhase, setFPhase] = useState("all");
+  const [fEnv, setFEnv] = useState("all");
+  const [fStatus, setFStatus] = useState("all");
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(null);
+  const setScen = (id, fn) => setProject((pr) => ({ ...pr, scenarios: (pr.scenarios || []).map((s) => (s.id === id ? fn(s) : s)) }));
+  const rounds = project.rounds || ["Kolo 1"];
 
-  const addCycle = () => {
-    const prev = cycles[cycles.length - 1];
-    const tests = prev ? prev.tests.map((t) => ({ ...t, id: uid(), result: "", attempts: [], links: (t.links || []).map((l) => ({ ...l })) })) : [];
-    const nc = { id: uid(), name: `Cyklus ${cycles.length + 1}`, from: "", to: "", tests };
-    setProject((pr) => ({ ...pr, cycles: [...(pr.cycles || []), nc] }));
-    setSelCycle(nc.id);
-  };
-  const updateCycle = (fn) => setProject((pr) => ({ ...pr, cycles: pr.cycles.map((c) => (c.id === cycle.id ? fn(c) : c)) }));
-  const updateTest = (testId, fn) => updateCycle((c) => ({ ...c, tests: c.tests.map((t) => (t.id === testId ? fn(t) : t)) }));
-  const addTest = () => {
-    const nt = mkTest("Nový test", project.groups[0]?.name || "", "", "", me.email, [], []);
-    updateCycle((c) => ({ ...c, tests: [...c.tests, nt] }));
-    setOpenTest(nt.id);
-  };
-
-  if (!cycle) return <div style={{ color: T.muted, fontSize: 13 }}>Zatiaľ žiadny cyklus. <span onClick={addCycle} style={{ color: T.greenLink, cursor: "pointer" }}>+ Nový cyklus</span></div>;
-  const st = cycleStats(cycle);
-  const byArea = {};
-  cycle.tests.forEach((t) => { (byArea[t.area || "Bez oblasti"] ||= []).push(t); });
+  const all = (project.scenarios || []).filter((s) => s.category === cat);
+  const ql = q.trim().toLowerCase();
+  const scen = all.filter((s) =>
+    (fPhase === "all" || (s.phase || "F0") === fPhase) &&
+    (fEnv === "all" || (s.env || "") === fEnv) &&
+    (fStatus === "all" || (s.status || "TBD") === fStatus) &&
+    (!ql || (s.name || "").toLowerCase().includes(ql) || (s.code || "").toLowerCase().includes(ql) || (s.process || "").toLowerCase().includes(ql)));
+  const byProc = {}; scen.forEach((s) => { (byProc[s.process || "—"] ||= []).push(s); });
+  const st = { total: scen.length, Done: scen.filter((s) => s.status === "Done").length, IT: scen.filter((s) => s.status === "IN TESTING").length, TBD: scen.filter((s) => (s.status || "TBD") === "TBD").length };
+  const chip = (on) => ({ fontSize: 12, padding: "5px 11px", borderRadius: 7, cursor: "pointer", background: on ? T.green : "transparent", color: on ? T.bg : T.muted, fontWeight: on ? 500 : 400 });
 
   return (
     <div>
+      <div style={{ display: "inline-flex", background: T.panel, border: `1px solid ${T.border}`, borderRadius: 9, padding: 3, gap: 3, marginBottom: 12 }}>
+        {CATS.map(([k, lbl]) => <span key={k} onClick={() => { setCat(k); setOpen(null); }} style={chip(cat === k)}>{lbl} <span style={{ opacity: .7 }}>{(project.scenarios || []).filter((s) => s.category === k).length}</span></span>)}
+      </div>
+
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-        {cycles.map((c) => {
-          const cs = cycleStats(c); const on = c.id === cycle.id;
-          return <span key={c.id} onClick={() => { setSelCycle(c.id); setOpenTest(null); }} style={{ fontSize: 12, background: on ? "rgba(0,184,74,.1)" : T.panel, border: `1px solid ${on ? T.green : T.border}`, borderRadius: 8, padding: "6px 10px", color: on ? T.text : T.muted, fontWeight: on ? 500 : 400, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>{c.name} · {cs.pct == null ? "–" : cs.pct + "%"}</span>;
-        })}
-        <span onClick={addCycle} style={{ fontSize: 12, background: T.panel, border: `1px dashed ${T.border}`, borderRadius: 8, padding: "6px 10px", color: T.green, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}><Plus size={14} />Nový cyklus</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "5px 8px", flex: 1, minWidth: 150 }}>
+          <Search size={13} color={T.muted} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="hľadať scenár…" style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none", color: T.text, fontSize: 12 }} />
+        </div>
+        <Seg label="Fáza" opts={[["all", "Všetky"], ["F0", "F0"], ["F1", "F1"], ["F0/F1", "F0/F1"]]} val={fPhase} set={setFPhase} />
+        {cat === "func" && <Seg label="Env" opts={[["all", "Všetky"], ["MOCK", "MOCK"], ["HW", "HW"]]} val={fEnv} set={setFEnv} />}
+        <Seg label="Status" opts={[["all", "Všetky"], ["Done", "Done"], ["IN TESTING", "In testing"], ["TBD", "TBD"]]} val={fStatus} set={setFStatus} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(90px,1fr))", gap: 8, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(90px,1fr))", gap: 8, marginBottom: 14 }}>
         <Metric label="Scenáre" value={st.total} />
-        <Metric label="OK" value={st.OK} color={T.green} />
-        <Metric label="BUG" value={st.BUG} color={T.red} />
-        <Metric label="Blocked" value={st.Blocked} color={T.amber} />
-        <Metric label="Úspešnosť" value={st.pct == null ? "–" : st.pct + "%"} color={T.green} />
+        <Metric label="Done" value={st.Done} color={T.green} />
+        <Metric label="In testing" value={st.IT} color={T.amber} />
+        <Metric label="TBD" value={st.TBD} color={T.red} />
       </div>
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-        <button onClick={addTest} style={{ fontSize: 12, background: T.green, color: T.bg, border: "none", borderRadius: 8, padding: "6px 11px", fontWeight: 500, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><Plus size={14} />Nový test</button>
-      </div>
-
-      {Object.entries(byArea).map(([area, tests]) => (
-        <div key={area} style={{ marginBottom: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: T.greenDeep }} /><span style={{ fontSize: 12.5, fontWeight: 500 }}>{area}</span><span style={{ fontSize: 10.5, color: T.muted }}>{tests.length} scenáre</span></div>
+      {Object.entries(byProc).map(([proc, list]) => (
+        <div key={proc} style={{ marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: T.greenDeep }} /><span style={{ fontSize: 12.5, fontWeight: 500 }}>{proc}</span><span style={{ fontSize: 10.5, color: T.muted }}>{list.length}</span></div>
           <div style={{ border: `1px solid ${T.borderSoft}`, borderRadius: 10, overflow: "hidden" }}>
-            {tests.map((t, i) => (
-              <TestRow key={t.id} t={t} last={i === tests.length - 1} open={openTest === t.id}
-                onToggle={() => setOpenTest(openTest === t.id ? null : t.id)}
-                onUpdate={(fn) => updateTest(t.id, fn)}
-                onDelete={() => updateCycle((c) => ({ ...c, tests: c.tests.filter((x) => x.id !== t.id) }))}
-                me={me} groups={project.groups} />
-            ))}
+            {list.map((s, i) => <ScenRow key={s.id} s={s} last={i === list.length - 1} open={open === s.id} onToggle={() => setOpen(open === s.id ? null : s.id)} onUpdate={(fn) => setScen(s.id, fn)} rounds={rounds} me={me} />)}
           </div>
         </div>
       ))}
-      <div style={{ fontSize: 10.5, color: T.dim, display: "flex", alignItems: "center", gap: 5, marginTop: 6 }}>Na sumári vidíš názov + výsledok. Po rozkliknutí sa vyplní čo sa má stať, pokusy (čo sa reálne stalo) a výsledok — pre každý cyklus a testera zvlášť.</div>
+      {scen.length === 0 && <div style={{ color: T.dim, fontSize: 12.5, padding: 14, textAlign: "center", border: `1px dashed ${T.border}`, borderRadius: 10 }}>Žiadne scenáre pre tento filter.</div>}
+      <div style={{ fontSize: 10.5, color: T.dim, marginTop: 6, display: "flex", alignItems: "center", gap: 5 }}><i></i>Status Done/IN TESTING/TBD je z Excelu. Pri rozkliknutí zapíšeš pokusy (čo sa reálne stalo) — aj cez re-test kolá.</div>
     </div>
   );
 }
-function TestRow({ t, last, open, onToggle, onUpdate, onDelete, me, groups }) {
-  const ev = evalTest(t);
-  const jira = (t.links || []).find(isJiraLink);
+function Seg({ label, opts, val, set }) {
+  return <div style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+    <span style={{ fontSize: 10.5, color: T.muted }}>{label}</span>
+    <div style={{ display: "inline-flex", background: T.panel, border: `1px solid ${T.border}`, borderRadius: 8, padding: 2, gap: 2 }}>
+      {opts.map(([k, lbl]) => <span key={k} onClick={() => set(k)} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 6, cursor: "pointer", background: val === k ? T.green : "transparent", color: val === k ? T.bg : T.muted }}>{lbl}</span>)}
+    </div>
+  </div>;
+}
+function ScenRow({ s, last, open, onToggle, onUpdate, rounds, me }) {
+  const ev = evalTest(s);
   return (
     <div style={{ borderBottom: last && !open ? "none" : `1px solid ${T.borderSoft}` }}>
-      <div onClick={onToggle} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", cursor: "pointer", background: open ? T.panel : "transparent" }}>
+      <div onClick={onToggle} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", cursor: "pointer", background: open ? T.panel : "transparent" }}>
         {open ? <ChevronDown size={15} color={T.green} /> : <ChevronRight size={15} color={T.muted} />}
-        <span style={{ flex: 1, fontSize: 12, minWidth: 0, fontWeight: open ? 500 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
-        {ev.n > 0 && <span style={{ fontSize: 10.5, color: T.muted }}>{ev.ok}/{ev.n}</span>}
-        {jira && <LinkChip link={jira} />}
-        {t.result ? <Pill bg={TEST_RESULT[t.result]} fg={t.result === "Out of scope" ? T.muted : "#08160c"}>{t.result}</Pill> : <Pill bg={T.borderSoft} fg={T.muted}>—</Pill>}
+        <span style={{ fontSize: 10, color: T.dim, fontFamily: "ui-monospace,monospace", flex: "none" }}>{s.code}</span>
+        <span style={{ flex: 1, fontSize: 12, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: open ? 500 : 400 }}>{s.name}</span>
+        {s.priority && <span style={{ fontSize: 9, color: T.muted, border: `1px solid ${T.border}`, borderRadius: 4, padding: "1px 4px", flex: "none" }}>{s.priority}</span>}
+        {s.phase && <span style={{ fontSize: 9.5, color: T.muted, flex: "none" }}>{s.phase}</span>}
+        {s.env && <span style={{ fontSize: 9.5, color: T.dim, flex: "none" }}>{s.env}</span>}
+        {ev.n > 0 && <span style={{ fontSize: 10.5, color: T.muted, flex: "none" }}>{ev.ok}/{ev.n}</span>}
+        <Pill bg={TS_COLOR[s.status || "TBD"]} fg={"#08160c"}>{s.status || "TBD"}</Pill>
       </div>
-      {open && <TestDetail t={t} onUpdate={onUpdate} onDelete={onDelete} me={me} groups={groups} />}
+      {open && <ScenDetail s={s} onUpdate={onUpdate} rounds={rounds} me={me} />}
     </div>
   );
 }
-function TestDetail({ t, onUpdate, onDelete, me, groups }) {
-  const [newLink, setNewLink] = useState({ url: "", label: "" });
-  const ev = evalTest(t);
+function ScenDetail({ s, onUpdate, rounds, me }) {
+  const ev = evalTest(s);
+  const [lk, setLk] = useState({ url: "", label: "" });
+  const [round, setRound] = useState((rounds && rounds[rounds.length - 1]) || "Kolo 1");
   const field = { background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px", color: T.text, fontSize: 12, width: "100%", boxSizing: "border-box", outline: "none" };
-  const addAttempt = () => onUpdate((x) => ({ ...x, attempts: [...x.attempts, { id: uid(), text: "", ok: true, at: new Date().toISOString().slice(0, 10) }] }));
+  const addAttempt = () => onUpdate((x) => ({ ...x, attempts: [...(x.attempts || []), { id: uid(), text: "", ok: true, at: new Date().toISOString().slice(0, 10), round }] }));
+  const ro = { fontSize: 12, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px", color: T.text2, minHeight: 20, whiteSpace: "pre-wrap" };
   return (
     <div style={{ padding: "12px 14px 14px", background: T.panel2, borderTop: `1px solid ${T.borderSoft}`, display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <div style={{ flex: 2, minWidth: 200 }}>
-          <Lbl>Názov testu</Lbl>
-          <input value={t.name} onChange={(e) => onUpdate((x) => ({ ...x, name: e.target.value }))} style={field} />
-        </div>
-        <div style={{ flex: 1, minWidth: 140 }}>
-          <Lbl>Oblasť</Lbl>
-          <select value={t.area} onChange={(e) => onUpdate((x) => ({ ...x, area: e.target.value }))} style={{ ...field, appearance: "auto" }}>
-            <option value="">—</option>
-            {groups.map((g) => <option key={g.id} value={g.name}>{g.name}</option>)}
-          </select>
-        </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <SelField label="Status" val={s.status || "TBD"} opts={TEST_STATUS} onChange={(v) => onUpdate((x) => ({ ...x, status: v }))} color={TS_COLOR[s.status || "TBD"]} />
+        <SelField label="Fáza" val={s.phase || "F0"} opts={PHASE_OPTS} onChange={(v) => onUpdate((x) => ({ ...x, phase: v }))} />
+        <SelField label="Env" val={s.env || ""} opts={["", ...ENVS]} onChange={(v) => onUpdate((x) => ({ ...x, env: v }))} />
+        <SelField label="Priorita" val={s.priority || ""} opts={["", ...TEST_PRIOS]} onChange={(v) => onUpdate((x) => ({ ...x, priority: v }))} />
       </div>
+      {s.preconditions && <div><Lbl>Preconditions</Lbl><div style={ro}>{s.preconditions}</div></div>}
+      {s.steps && <div><Lbl>Kroky</Lbl><div style={ro}>{s.steps}</div></div>}
+      <div><Lbl><Target size={13} color={T.green} /> Očakávaný výsledok</Lbl><div style={ro}>{s.expected || "—"}</div></div>
 
       <div>
-        <Lbl><Target size={13} color={T.green} /> Čo sa má stať</Lbl>
-        <textarea value={t.expected} onChange={(e) => onUpdate((x) => ({ ...x, expected: e.target.value }))} rows={2} style={{ ...field, resize: "vertical" }} />
-      </div>
-
-      <div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7, flexWrap: "wrap", gap: 6 }}>
           <Lbl><ListOrdered size={14} /> Pokusy — čo sa reálne stalo</Lbl>
-          <span onClick={addAttempt} style={{ fontSize: 11, color: T.green, background: "rgba(0,184,74,.1)", border: `1px dashed rgba(0,184,74,.35)`, borderRadius: 7, padding: "4px 9px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}><Plus size={13} />Pridať pokus</span>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <select value={round} onChange={(e) => setRound(e.target.value)} style={{ ...field, width: "auto", padding: "3px 6px", appearance: "auto", fontSize: 11 }}>{(rounds || ["Kolo 1"]).map((r) => <option key={r}>{r}</option>)}</select>
+            <span onClick={addAttempt} style={{ fontSize: 11, color: T.green, background: "rgba(0,184,74,.1)", border: `1px dashed rgba(0,184,74,.35)`, borderRadius: 7, padding: "4px 9px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}><Plus size={13} />Pridať pokus</span>
+          </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {t.attempts.map((a, i) => (
+          {(s.attempts || []).map((a, i) => (
             <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, background: T.panel, border: `1px solid ${a.ok ? T.border : "rgba(248,81,73,.3)"}`, borderRadius: 8, padding: "6px 9px" }}>
               <span style={{ fontSize: 10, color: T.muted, fontFamily: "ui-monospace,monospace", width: 16, textAlign: "center" }}>{i + 1}</span>
+              {a.round && <span style={{ fontSize: 9, color: T.dim, border: `1px solid ${T.border}`, borderRadius: 4, padding: "1px 4px" }}>{a.round}</span>}
               <input value={a.text} placeholder="čo sa stalo…" onChange={(e) => onUpdate((x) => ({ ...x, attempts: x.attempts.map((y) => (y.id === a.id ? { ...y, text: e.target.value } : y)) }))} style={{ flex: 1, background: "transparent", border: "none", color: T.text2, fontSize: 12, outline: "none", minWidth: 0 }} />
-              {["OK", "Fail"].map((v) => {
-                const ok = v === "OK"; const on = a.ok === ok;
-                return <span key={v} onClick={() => onUpdate((x) => ({ ...x, attempts: x.attempts.map((y) => (y.id === a.id ? { ...y, ok } : y)) }))} style={{ fontSize: 10, borderRadius: 99, padding: "2px 8px", cursor: "pointer", fontWeight: 500, background: on ? (ok ? T.green : T.red) : T.borderSoft, color: on ? "#08160c" : T.muted }}>{v}</span>;
-              })}
+              {["OK", "Fail"].map((v) => { const ok = v === "OK"; const on = a.ok === ok; return <span key={v} onClick={() => onUpdate((x) => ({ ...x, attempts: x.attempts.map((y) => (y.id === a.id ? { ...y, ok } : y)) }))} style={{ fontSize: 10, borderRadius: 99, padding: "2px 8px", cursor: "pointer", fontWeight: 500, background: on ? (ok ? T.green : T.red) : T.borderSoft, color: on ? "#08160c" : T.muted }}>{v}</span>; })}
               <Trash2 size={13} color={T.dim} style={{ cursor: "pointer" }} onClick={() => onUpdate((x) => ({ ...x, attempts: x.attempts.filter((y) => y.id !== a.id) }))} />
             </div>
           ))}
-          {t.attempts.length === 0 && <div style={{ fontSize: 11.5, color: T.dim }}>Zatiaľ žiadny pokus.</div>}
+          {(s.attempts || []).length === 0 && <div style={{ fontSize: 11.5, color: T.dim }}>Zatiaľ žiadny pokus.</div>}
         </div>
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", background: T.panel, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 12px" }}>
-        <div style={{ fontSize: 11, color: T.muted }}>Vyhodnotenie</div>
-        <div style={{ flex: 1, minWidth: 120 }}>
-          <div style={{ display: "flex", height: 8, borderRadius: 99, overflow: "hidden", background: T.borderSoft }}>
-            <div style={{ width: (ev.pct || 0) + "%", background: T.greenDeep }} /><div style={{ width: (100 - (ev.pct || 0)) + "%", background: ev.n ? T.red : T.borderSoft }} />
-          </div>
-        </div>
-        <div style={{ fontSize: 13, fontWeight: 500 }}><span style={{ color: T.green }}>{ev.ok}</span><span style={{ color: T.muted }}> / {ev.n} OK</span></div>
-      </div>
-
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap" }}>
-        <div>
-          <Lbl>Výsledok</Lbl>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {["OK", "BUG", "Blocked", "Out of scope"].map((r) => {
-              const on = t.result === r;
-              return <span key={r} onClick={() => onUpdate((x) => ({ ...x, result: r }))} style={{ fontSize: 11, borderRadius: 8, padding: "5px 11px", cursor: "pointer", fontWeight: on ? 500 : 400, background: on ? TEST_RESULT[r] : T.panel, border: `1px solid ${on ? TEST_RESULT[r] : T.border}`, color: on ? (r === "Out of scope" ? T.bg : "#08160c") : T.muted }}>{r}</span>;
-            })}
-          </div>
-        </div>
+        {ev.n > 0 && <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 10, background: T.panel, border: `1px solid ${T.border}`, borderRadius: 10, padding: "8px 11px" }}>
+          <span style={{ fontSize: 11, color: T.muted }}>Úspešnosť pokusov</span>
+          <div style={{ flex: 1, minWidth: 80, display: "flex", height: 7, borderRadius: 99, overflow: "hidden", background: T.borderSoft }}><div style={{ width: (ev.pct || 0) + "%", background: T.greenDeep }} /><div style={{ width: (100 - (ev.pct || 0)) + "%", background: T.red }} /></div>
+          <span style={{ fontSize: 12, fontWeight: 500 }}><span style={{ color: T.green }}>{ev.ok}</span><span style={{ color: T.muted }}> / {ev.n}</span></span>
+        </div>}
       </div>
 
       <div>
-        <Lbl><Link2 size={13} /> Odkazy (Jira, Asana, …)</Lbl>
+        <Lbl><Link2 size={13} /> Odkazy (Jira/KVD, Asana…)</Lbl>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
-          {(t.links || []).map((l, i) => (
-            <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: T.panel, border: `1px solid ${T.border}`, borderRadius: 8, padding: "4px 8px" }}>
-              <LinkChip link={l} />
-              <X size={12} color={T.dim} style={{ cursor: "pointer" }} onClick={() => onUpdate((x) => ({ ...x, links: x.links.filter((_, j) => j !== i) }))} />
-            </span>
-          ))}
-          {(t.links || []).length === 0 && <span style={{ fontSize: 11.5, color: T.dim }}>Žiadny odkaz.</span>}
+          {(s.links || []).map((l, i) => <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: T.panel, border: `1px solid ${T.border}`, borderRadius: 8, padding: "4px 8px" }}><LinkChip link={l} /><X size={12} color={T.dim} style={{ cursor: "pointer" }} onClick={() => onUpdate((x) => ({ ...x, links: x.links.filter((_, j) => j !== i) }))} /></span>)}
+          {(s.links || []).length === 0 && <span style={{ fontSize: 11.5, color: T.dim }}>Žiadny odkaz.</span>}
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <input value={newLink.url} placeholder="URL alebo Jira kľúč (napr. LOG-123)" onChange={(e) => setNewLink((n) => ({ ...n, url: e.target.value }))} style={{ ...field, flex: 2, minWidth: 180 }} />
-          <input value={newLink.label} placeholder="štítok (voliteľné)" onChange={(e) => setNewLink((n) => ({ ...n, label: e.target.value }))} style={{ ...field, flex: 1, minWidth: 120 }} />
-          <button onClick={() => { if (!newLink.url.trim()) return; onUpdate((x) => ({ ...x, links: [...(x.links || []), { ...newLink }] })); setNewLink({ url: "", label: "" }); }} style={{ background: T.panel, border: `1px solid ${T.border}`, color: T.text, borderRadius: 8, padding: "0 12px", cursor: "pointer", fontSize: 12 }}>Pridať</button>
+          <input value={lk.url} placeholder="URL / kľúč (LOG-…, KVD-…)" onChange={(e) => setLk((v) => ({ ...v, url: e.target.value }))} style={{ ...field, flex: 2, minWidth: 170 }} />
+          <input value={lk.label} placeholder="štítok" onChange={(e) => setLk((v) => ({ ...v, label: e.target.value }))} style={{ ...field, flex: 1, minWidth: 100 }} />
+          <button onClick={() => { if (!lk.url.trim()) return; onUpdate((x) => ({ ...x, links: [...(x.links || []), { ...lk }] })); setLk({ url: "", label: "" }); }} style={{ background: T.panel, border: `1px solid ${T.border}`, color: T.text, borderRadius: 8, padding: "0 12px", cursor: "pointer", fontSize: 12 }}>Pridať</button>
         </div>
       </div>
-
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", borderTop: `1px solid ${T.borderSoft}`, paddingTop: 11 }}>
-        <div style={{ display: "flex", gap: 14, fontSize: 11, color: T.muted, alignItems: "center" }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 5 }}><User size={13} />{t.testerEmail || me.email}</span>
-          <Trash2 size={14} color={T.dim} style={{ cursor: "pointer" }} onClick={onDelete} />
-        </div>
-        <span style={{ fontSize: 11, color: T.muted, display: "inline-flex", alignItems: "center", gap: 5 }}><Save size={14} color={T.green} />ukladá sa priebežne</span>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: T.muted, borderTop: `1px solid ${T.borderSoft}`, paddingTop: 10 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 5 }}>{s.spracuje ? <><User size={13} />{s.spracuje}</> : ""}</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Save size={13} color={T.green} />ukladá sa priebežne</span>
       </div>
     </div>
   );
 }
+function SelField({ label, val, opts, onChange, color }) {
+  return <div><Lbl>{label}</Lbl><select value={val} onChange={(e) => onChange(e.target.value)} style={{ background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 8px", color: color || T.text, fontSize: 12, appearance: "auto", outline: "none" }}>{opts.map((o) => <option key={o} value={o}>{o || "—"}</option>)}</select></div>;
+}
+
 function Lbl({ children }) { return <div style={{ fontSize: 10.5, color: T.muted, marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>{children}</div>; }
 
 /* ── Odkazy tab ── */
 function OdkazyTab({ project }) {
   const rows = [];
   project.groups.forEach((g) => g.processes.forEach((p) => p.steps.forEach((s) => (s.links || []).forEach((l) => rows.push({ g, p, s, l })))));
-  (project.cycles || []).forEach((c) => c.tests.forEach((t) => (t.links || []).forEach((l) => rows.push({ cycle: c, t, l }))));
+  (project.scenarios || []).forEach((s) => (s.links || []).forEach((l) => rows.push({ scen: s, l })));
   return (
     <div>
       <div style={{ fontSize: 12.5, fontWeight: 500, marginBottom: 10 }}>Všetky odkazy ({rows.length})</div>
@@ -1037,8 +1144,9 @@ function OdkazyTab({ project }) {
         {rows.map((r, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderBottom: i === rows.length - 1 ? "none" : `1px solid ${T.borderSoft}` }}>
             <LinkChip link={r.l} />
+            {isJiraLink(r.l) && (r.l.url || "").toUpperCase().includes("KVD-") && <span style={{ fontSize: 8, color: T.amber, border: `1px solid ${T.amber}`, borderRadius: 4, padding: "0 3px", flex: "none" }}>KVADOS</span>}
             <span style={{ fontSize: 11.5, color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {r.s ? `${r.g.name} › ${r.p.name} › ${r.s.name}` : `${r.cycle.name} › ${r.t.name}`}
+              {r.s ? `${r.g.name} › ${r.p.name} › ${r.s.name}` : `${CAT_LABEL[r.scen.category] || "test"} › ${r.scen.process} › ${r.scen.name}`}
             </span>
           </div>
         ))}
@@ -1085,7 +1193,7 @@ async function parseJiraFile(file) {
     if (!key) return null;
     return { key, summary: String(r[cS] || "").trim(), status: String(r[cSt] || "").trim(),
       assignee: String(r[cA] || "").split("@")[0].trim(), type: String(r[cT] || "Story").trim(),
-      epic: String(r[cE] || "").trim() || "Bez oblasti", url: JIRA_BASE + key };
+      epic: String(r[cE] || "").trim() || "Bez oblasti", origin: originOf(key), url: JIRA_BASE + key };
   }).filter(Boolean);
 }
 async function parseDocx(file) {
@@ -1096,16 +1204,29 @@ async function parseDocx(file) {
   const arrayBuffer = await file.arrayBuffer();
   const res = await mammoth.convertToHtml({ arrayBuffer });
   const doc = new DOMParser().parseFromString(res.value, "text/html");
-  const heads = [...doc.querySelectorAll("h1,h2,h3,h4")].map((el) => ({ level: +el.tagName[1], text: el.textContent.trim() })).filter((x) => x.text);
+  const nodes = [...doc.body.querySelectorAll("h1,h2,h3,h4,p")];
+  const heads = [];
+  for (let i = 0; i < nodes.length; i++) {
+    const el = nodes[i]; const tag = el.tagName.toLowerCase();
+    if (/^h[1-4]$/.test(tag)) {
+      const text = el.textContent.trim(); if (!text) continue;
+      let desc = "";
+      for (let j = i + 1; j < nodes.length; j++) {
+        const n = nodes[j]; if (/^h[1-4]$/.test(n.tagName.toLowerCase())) break;
+        if (n.tagName.toLowerCase() === "p") { const t = n.textContent.replace(/\s+/g, " ").trim(); if (t) { desc = t; break; } }
+      }
+      heads.push({ level: +tag[1], text, desc: desc.slice(0, 220) });
+    }
+  }
   const text = doc.body.textContent.replace(/\s+/g, " ").trim();
   return { heads, text };
 }
 function headsToGroups(heads) {
-  // h1/h2 -> skupina (oblasť), h3/h4 -> proces
+  // h1/h2 -> skupina (oblasť), h3/h4 -> proces (+ jednoduchý popis z prvého odseku)
   const groups = []; let cur = null;
   heads.forEach((hd) => {
     if (hd.level <= 2) { cur = { name: hd.text, processes: [] }; groups.push(cur); }
-    else if (cur) cur.processes.push(hd.text);
+    else if (cur) cur.processes.push({ name: hd.text, desc: hd.desc || "" });
     else { cur = { name: hd.text, processes: [] }; groups.push(cur); }
   });
   return groups.filter((g) => g.name);
@@ -1163,12 +1284,17 @@ function ImportModal({ project, setProject, me, onClose }) {
   };
   const applyDoc = () => {
     setProject((pr) => {
-      const groups = [...(pr.groups || [])];
-      const names = new Set(groups.map((g) => g.name.toLowerCase()));
-      preview.groups.forEach((g) => {
-        if (names.has(g.name.toLowerCase())) return;
-        groups.push({ id: uid(), name: g.name, color: T.greenDeep,
-          processes: g.processes.map((pn) => ({ id: uid(), name: pn, status: "Nezačaté", description: "", steps: [] })) });
+      const groups = (pr.groups || []).map((g) => ({ ...g, processes: [...g.processes] }));
+      const gByName = Object.fromEntries(groups.map((g) => [g.name.toLowerCase(), g]));
+      preview.groups.forEach((pg) => {
+        let g = gByName[pg.name.toLowerCase()];
+        if (!g) { g = { id: uid(), name: pg.name, color: T.greenDeep, integrationTests: { k1wms: false, wmswes: false }, processes: [] }; groups.push(g); gByName[pg.name.toLowerCase()] = g; }
+        const pByName = Object.fromEntries(g.processes.map((p) => [p.name.toLowerCase(), p]));
+        pg.processes.forEach((pp) => {
+          const ex = pByName[pp.name.toLowerCase()];
+          if (ex) { if (pp.desc && !ex.description) ex.description = pp.desc; }
+          else g.processes.push({ id: uid(), name: pp.name, status: "Nezačaté", priority: "", description: pp.desc || "", steps: [] });
+        });
       });
       const documents = [...(pr.documents || []), { id: uid(), name: preview.fileName, type: preview.fileType,
         uploadedBy: me.email, date: new Date().toISOString().slice(0, 10), text: (preview.text || "").slice(0, 20000) }];
@@ -1178,13 +1304,17 @@ function ImportModal({ project, setProject, me, onClose }) {
   };
   const applyTests = () => {
     setProject((pr) => {
-      const cycles = [...(pr.cycles || [])];
-      let last = cycles[cycles.length - 1];
-      if (!last) { last = { id: uid(), name: "Cyklus 1", from: "", to: "", tests: [] }; cycles.push(last); }
-      const tests = [...last.tests, ...preview.tests.map((t) => mkTest(t.name, t.area, t.expected, "", me.email, [], []))];
-      cycles[cycles.length - 1] = { ...last, tests };
+      const scenarios = [...(pr.scenarios || [])];
+      const seen = new Set(scenarios.map((s) => (s.code || s.name || "").toLowerCase()));
+      preview.tests.forEach((t) => {
+        const key = (t.code || t.name || "").toLowerCase();
+        if (key && seen.has(key)) return;
+        scenarios.push({ id: uid(), code: t.code || "", name: t.name, category: t.category || "func", process: t.area || "—",
+          phase: t.phase || "F0", env: t.env || "", status: t.status || "TBD", priority: t.priority || "",
+          preconditions: t.preconditions || "", steps: t.steps || "", expected: t.expected || "", spracuje: t.spracuje || "", links: [], attempts: [] });
+      });
       const documents = [...(pr.documents || []), { id: uid(), name: preview.fileName, type: preview.fileType, uploadedBy: me.email, date: new Date().toISOString().slice(0, 10), text: "" }];
-      return { ...pr, cycles, documents };
+      return { ...pr, scenarios, documents };
     });
     onClose();
   };
@@ -1232,12 +1362,17 @@ function ImportModal({ project, setProject, me, onClose }) {
           )}
           {preview?.kind === "doc" && (
             <div>
-              <div style={{ fontSize: 12, color: T.muted, margin: "4px 0 8px" }}>Návrh z <b style={{ color: T.text }}>{preview.fileName}</b> — {preview.groups.length} oblastí. Nové sa pridajú, existujúce (podľa názvu) sa nechajú.</div>
-              <div style={{ ...box, maxHeight: 260, overflow: "auto", padding: 10 }}>
+              <div style={{ fontSize: 12, color: T.muted, margin: "4px 0 8px" }}>Návrh z <b style={{ color: T.text }}>{preview.fileName}</b> — {preview.groups.length} oblastí. Nové procesy sa pridajú, k existujúcim sa doplní chýbajúci popis.</div>
+              <div style={{ ...box, maxHeight: 300, overflow: "auto", padding: 10 }}>
                 {preview.groups.map((g, i) => (
-                  <div key={i} style={{ marginBottom: 8 }}>
+                  <div key={i} style={{ marginBottom: 10 }}>
                     <div style={{ fontSize: 12.5, fontWeight: 500 }}>{g.name}</div>
-                    <div style={{ fontSize: 11, color: T.muted, paddingLeft: 12 }}>{g.processes.join(" · ") || "—"}</div>
+                    <div style={{ paddingLeft: 12, marginTop: 3, display: "flex", flexDirection: "column", gap: 3 }}>
+                      {g.processes.map((p, k) => (
+                        <div key={k} style={{ fontSize: 11 }}><span style={{ color: T.text2 }}>{p.name}</span>{p.desc ? <span style={{ color: T.dim }}> — {p.desc.slice(0, 90)}{p.desc.length > 90 ? "…" : ""}</span> : ""}</div>
+                      ))}
+                      {g.processes.length === 0 && <div style={{ fontSize: 11, color: T.dim }}>—</div>}
+                    </div>
                   </div>
                 ))}
                 {preview.groups.length === 0 && <div style={{ fontSize: 11.5, color: T.dim }}>Nenašla som nadpisy — dokument sa uloží, procesy dorobíš ručne.</div>}
@@ -1315,12 +1450,12 @@ async function exportExcel(project) {
       (s.links || []).map((l) => normalizeUrl(l.url)).join("  "),
       (s.bugs || []).map((b) => `${b.title} [${b.severity || ""}/${b.status || "Otvorený"}]`).join("; ")]));
   }));
-  const Tr = [["Cyklus", "Oblasť", "Test", "Čo sa má stať", "Výsledok", "Pokusy OK", "Pokusy spolu", "Úspešnosť %", "Odkazy", "Tester"]];
-  (project.cycles || []).forEach((c) => c.tests.forEach((t) => {
-    const ev = evalTest(t);
-    Tr.push([c.name, t.area, t.name, t.expected, t.result, ev.ok, ev.n, ev.pct == null ? "" : ev.pct,
-      (t.links || []).map((l) => normalizeUrl(l.url)).join("  "), t.testerEmail || ""]);
-  }));
+  const Tr = [["Kategória", "Proces", "ID", "Scenár", "Fáza", "Env", "Status", "Priorita", "Očakávaný výsledok", "Pokusy OK", "Pokusy", "Odkazy"]];
+  (project.scenarios || []).forEach((s) => {
+    const ev = evalTest(s);
+    Tr.push([CAT_LABEL[s.category] || s.category, s.process, s.code, s.name, s.phase, s.env, s.status, s.priority,
+      s.expected, ev.ok, ev.n, (s.links || []).map((l) => normalizeUrl(l.url)).join("  ")]);
+  });
   const Ir = [["Kľúč", "Súhrn", "Status", "Typ", "Assignee", "Epic", "URL"]];
   (project.issues || []).forEach((i) => Ir.push([i.key, i.summary, i.status, i.type, i.assignee, i.epic, i.url]));
   const wb = XLSX.utils.book_new();
