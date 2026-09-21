@@ -1232,14 +1232,38 @@ function headsToGroups(heads) {
   return groups.filter((g) => g.name);
 }
 async function parseTestsFile(file) {
-  const rows = await readTable(file);
-  if (!rows.length) return [];
-  const h = Object.keys(rows[0]);
-  const cN = findCol(h, ["Scenár", "Scenar", "Test", "Názov", "Name", "Summary"]);
-  const cAr = findCol(h, ["Oblasť", "Oblast", "Area", "Proces", "Sekcia"]);
-  const cE = findCol(h, ["Očakávané", "Ocakavane", "Expected", "Čo sa má stať"]);
-  return rows.map((r) => ({ name: String(r[cN] || "").trim(), area: String(r[cAr] || "").trim(),
-    expected: String(r[cE] || "").trim() })).filter((t) => t.name);
+  const XLSX = await import("xlsx");
+  const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+  const catOf = (sheet) => { const s = sheet.toLowerCase(); if (s.includes("bezp")) return "sec"; if (s.includes("výk") || s.includes("vyk")) return "perf"; return "func"; };
+  const col = (H, pats, avoid) => H.findIndex((h) => { const t = String(h || "").toLowerCase(); if (avoid && avoid.some((a) => t.includes(a))) return false; return pats.some((p) => t.includes(p)); });
+  const val = (r, i) => (i >= 0 ? String(r[i] == null ? "" : r[i]).trim() : "");
+  const out = [];
+  wb.SheetNames.forEach((sheet) => {
+    const cat = catOf(sheet);
+    const aoa = XLSX.utils.sheet_to_json(wb.Sheets[sheet], { header: 1, defval: "" });
+    if (!aoa.length) return;
+    let hr = aoa.findIndex((r) => r.some((c) => String(c).toLowerCase().includes("názov")) || r.some((c) => String(c).toLowerCase().trim() === "id"));
+    if (hr < 0) hr = 0;
+    const H = (aoa[hr] || []).map((x) => String(x || ""));
+    const cID = col(H, ["id"]), cName = col(H, ["názov", "nazov", "scenár", "summary", "name"], ["id"]),
+      cPhase = col(H, ["fáz", "faz"]), cEnv = col(H, ["env"]), cStat = col(H, ["test", "status"], ["názov"]),
+      cPre = col(H, ["precond", "predpoklad"]), cSteps = col(H, ["krok", "steps"]),
+      cExp = col(H, ["očak", "ocak", "expected", "výsledok", "vysledok"]), cSpr = col(H, ["spracuje", "assignee"]), cPrio = col(H, ["priorit"]);
+    let cur = "—";
+    for (let i = hr + 1; i < aoa.length; i++) {
+      const r = aoa[i]; const a = val(r, cID >= 0 ? cID : 0); const nm = val(r, cName);
+      if (!a && !nm) continue;
+      if (a && !/^TC-/i.test(a)) { cur = a; continue; }
+      if (/^TC-/i.test(a)) {
+        const st = val(r, cStat).toUpperCase();
+        out.push({ code: a, name: nm, category: cat, area: cur,
+          phase: val(r, cPhase) || "F0", env: val(r, cEnv),
+          status: st === "DONE" ? "Done" : st === "IN TESTING" ? "IN TESTING" : "TBD",
+          preconditions: val(r, cPre), steps: val(r, cSteps), expected: val(r, cExp), spracuje: val(r, cSpr), priority: val(r, cPrio) });
+      }
+    }
+  });
+  return out;
 }
 
 /* ───────────────────────── import modal ───────────────────────── */
@@ -1302,17 +1326,15 @@ function ImportModal({ project, setProject, me, onClose }) {
     });
     onClose();
   };
+  const [replaceScen, setReplaceScen] = useState(true);
   const applyTests = () => {
     setProject((pr) => {
-      const scenarios = [...(pr.scenarios || [])];
-      const seen = new Set(scenarios.map((s) => (s.code || s.name || "").toLowerCase()));
-      preview.tests.forEach((t) => {
-        const key = (t.code || t.name || "").toLowerCase();
-        if (key && seen.has(key)) return;
-        scenarios.push({ id: uid(), code: t.code || "", name: t.name, category: t.category || "func", process: t.area || "—",
-          phase: t.phase || "F0", env: t.env || "", status: t.status || "TBD", priority: t.priority || "",
-          preconditions: t.preconditions || "", steps: t.steps || "", expected: t.expected || "", spracuje: t.spracuje || "", links: [], attempts: [] });
-      });
+      const incoming = preview.tests.map((t) => ({ id: uid(), code: t.code || "", name: t.name, category: t.category || "func", process: t.area || "—",
+        phase: t.phase || "F0", env: t.env || "", status: t.status || "TBD", priority: t.priority || "",
+        preconditions: t.preconditions || "", steps: t.steps || "", expected: t.expected || "", spracuje: t.spracuje || "", links: [], attempts: [] }));
+      let scenarios;
+      if (replaceScen) scenarios = incoming;
+      else { scenarios = [...(pr.scenarios || [])]; const seen = new Set(scenarios.map((s) => (s.code || s.name || "").toLowerCase())); incoming.forEach((s) => { const k = (s.code || s.name || "").toLowerCase(); if (!(k && seen.has(k))) scenarios.push(s); }); }
       const documents = [...(pr.documents || []), { id: uid(), name: preview.fileName, type: preview.fileType, uploadedBy: me.email, date: new Date().toISOString().slice(0, 10), text: "" }];
       return { ...pr, scenarios, documents };
     });
@@ -1382,16 +1404,23 @@ function ImportModal({ project, setProject, me, onClose }) {
           )}
           {preview?.kind === "tests" && (
             <div>
-              <div style={{ fontSize: 12, color: T.muted, margin: "4px 0 8px" }}>Návrh — <b style={{ color: T.text }}>{preview.tests.length}</b> scenárov sa pridá do posledného cyklu.</div>
-              <div style={{ ...box, maxHeight: 260, overflow: "auto" }}>
-                {preview.tests.slice(0, 60).map((t, i) => (
-                  <div key={i} style={{ display: "flex", gap: 8, padding: "6px 10px", borderBottom: `1px solid ${T.borderSoft}`, fontSize: 11.5 }}>
+              <div style={{ fontSize: 12, color: T.muted, margin: "4px 0 8px" }}>Návrh — <b style={{ color: T.text }}>{preview.tests.length}</b> scenárov (Funkčné {preview.tests.filter((t) => t.category === "func").length} · Bezpečnostné {preview.tests.filter((t) => t.category === "sec").length} · Výkonnostné {preview.tests.filter((t) => t.category === "perf").length}).</div>
+              <div style={{ ...box, maxHeight: 240, overflow: "auto" }}>
+                {preview.tests.slice(0, 80).map((t, i) => (
+                  <div key={i} style={{ display: "flex", gap: 8, padding: "6px 10px", borderBottom: `1px solid ${T.borderSoft}`, fontSize: 11.5, alignItems: "center" }}>
+                    <span style={{ fontSize: 9.5, color: T.dim, fontFamily: "ui-monospace,monospace", flex: "none" }}>{t.code}</span>
                     <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
-                    <span style={{ color: T.dim }}>{t.area}</span>
+                    <span style={{ color: T.dim, flex: "none" }}>{t.area}</span>
+                    <span style={{ fontSize: 9.5, color: T.muted, flex: "none" }}>{t.phase}{t.env ? " · " + t.env : ""}</span>
                   </div>
                 ))}
+                {preview.tests.length > 80 && <div style={{ padding: 8, fontSize: 11, color: T.dim, textAlign: "center" }}>… a ďalších {preview.tests.length - 80}</div>}
               </div>
-              <Actions onCancel={() => setPreview(null)} onApply={applyTests} label="Pridať scenáre" />
+              <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, fontSize: 12, color: T.text2, cursor: "pointer" }}>
+                <span onClick={() => setReplaceScen((v) => !v)} style={{ color: replaceScen ? T.green : T.dim, display: "inline-flex" }}>{replaceScen ? <CheckSquare size={17} /> : <Square size={17} />}</span>
+                Nahradiť existujúce scenáre <span style={{ color: T.dim }}>(odporúčané pri importe celého katalógu)</span>
+              </label>
+              <Actions onCancel={() => setPreview(null)} onApply={applyTests} label={replaceScen ? "Nahradiť scenáre" : "Pridať scenáre"} />
             </div>
           )}
         </div>
