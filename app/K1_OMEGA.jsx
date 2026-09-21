@@ -46,7 +46,7 @@ const CATS = [["func", "Funkčné"], ["sec", "Bezpečnostné"], ["perf", "Výkon
 const CAT_LABEL = { func: "Funkčné", sec: "Bezpečnostné", perf: "Výkonnostné" };
 const PRIO_WEIGHT = { CRITICAL: 3, HIGH: 2, MEDIUM: 1, LOW: 0.5, "": 1 };
 const TEST_PRIOS = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
-const ENVS = ["MOCK", "HW"];
+const ENVS = ["MOCK", "SIM", "HW", "PROD"];
 const PHASE_OPTS = ["F0", "F1", "F0/F1"];
 
 /* ───────────────────────── utils ───────────────────────── */
@@ -139,6 +139,7 @@ function seedProjects() {
     ],
     rounds: ["Kolo 1"],
     phases: [{ key: "F0", planned: "", original: "" }, { key: "F1", planned: "2026-09-15", original: "2026-09-15" }],
+    live: [],
   };
   return [p4ds];
 }
@@ -304,14 +305,12 @@ function LinkChip({ link }) {
 /* ───────────────────────── app ───────────────────────── */
 export default function K1Omega() {
   const [state, setState] = useState(null);
-  const [me, setMe] = useState(null);
   const [route, setRoute] = useState({ view: "projects", projectId: null, tab: "prehlad" });
 
   useEffect(() => { loadState().then(setState); }, []);
   const persist = useCallback((next) => { setState(next); saveState(next); }, []);
 
   if (!state) return <Shell><div style={{ color: T.muted, padding: 40 }}>Načítavam…</div></Shell>;
-  if (!me) return <Login state={state} onLogin={setMe} />;
 
   const project = state.projects.find((p) => p.id === route.projectId) || null;
   const setProject = (fn) => persist({ ...state, projects: state.projects.map((p) => (p.id === project.id ? fn(p) : p)) });
@@ -319,13 +318,12 @@ export default function K1Omega() {
   return (
     <Shell>
       <div style={{ ...card, overflow: "hidden" }}>
-        <Header me={me} project={project} onLogout={() => setMe(null)}
-          onHome={() => setRoute({ view: "projects", projectId: null, tab: "prehlad" })} />
+        <Header project={project} onHome={() => setRoute({ view: "projects", projectId: null, tab: "prehlad" })} />
         {route.view === "projects" ? (
           <Portfolio state={state} persist={persist}
             onOpen={(id) => setRoute({ view: "project", projectId: id, tab: "prehlad" })} />
         ) : (
-          <ProjectView project={project} setProject={setProject} me={me}
+          <ProjectView project={project} setProject={setProject}
             tab={route.tab} setTab={(tab) => setRoute((r) => ({ ...r, tab }))} />
         )}
       </div>
@@ -342,42 +340,8 @@ function Shell({ children }) {
   );
 }
 
-/* ───────────────────────── login ───────────────────────── */
-function Login({ state, onLogin }) {
-  const [email, setEmail] = useState(""); const [pw, setPw] = useState(""); const [err, setErr] = useState("");
-  const submit = async () => {
-    setErr("");
-    const u = state.users.find((x) => x.email.toLowerCase() === email.trim().toLowerCase());
-    if (!u) return setErr("Neznámy e-mail.");
-    if ((await sha256(pw)) !== u.hash) return setErr("Nesprávne heslo.");
-    onLogin({ email: u.email, name: u.name });
-  };
-  return (
-    <div style={{ minHeight: "100vh", background: T.bg, display: "grid", placeItems: "center", padding: 20, fontFamily: "-apple-system,sans-serif" }}>
-      <div style={{ ...card, width: 340, padding: 22 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-          <span style={{ width: 34, height: 34, borderRadius: 9, background: T.panel2, border: `1px solid ${T.border}`, display: "grid", placeItems: "center", color: T.green }}><Workflow size={19} /></span>
-          <div><div style={{ color: T.text, fontWeight: 600 }}>K1_OMEGA</div><div style={{ color: T.muted, fontSize: 11 }}>process &amp; test tracker</div></div>
-        </div>
-        {["E-mail", "Heslo"].map((lbl, i) => (
-          <div key={lbl} style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 11, color: T.muted, marginBottom: 4 }}>{lbl}</div>
-            <input type={i ? "password" : "email"} value={i ? pw : email}
-              onChange={(e) => (i ? setPw : setEmail)(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && submit()}
-              style={{ width: "100%", boxSizing: "border-box", background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "9px 11px", color: T.text, fontSize: 13, outline: "none" }} />
-          </div>
-        ))}
-        {err && <div style={{ color: T.red, fontSize: 12, margin: "4px 0 8px" }}>{err}</div>}
-        <button onClick={submit} style={{ width: "100%", background: T.green, color: T.bg, border: "none", borderRadius: 8, padding: "10px", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Prihlásiť sa</button>
-        <div style={{ fontSize: 10.5, color: T.dim, marginTop: 10, textAlign: "center" }}>Dočasne: test@alza.cz / test</div>
-      </div>
-    </div>
-  );
-}
-
 /* ───────────────────────── header ───────────────────────── */
-function Header({ me, project, onLogout, onHome }) {
+function Header({ project, onHome }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: `1px solid ${T.borderSoft}` }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
@@ -391,10 +355,6 @@ function Header({ me, project, onLogout, onHome }) {
           <div><div style={{ fontSize: 14, fontWeight: 500 }}>K1_OMEGA</div><div style={{ fontSize: 11, color: T.muted }}>Multi-project process &amp; test tracker</div></div>
         )}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 11, color: T.muted, display: "flex", alignItems: "center", gap: 5 }}><User size={13} />{me.name}</span>
-        <span onClick={onLogout} title="Odhlásiť" style={{ width: 28, height: 28, borderRadius: 8, background: T.panel2, border: `1px solid ${T.border}`, display: "grid", placeItems: "center", color: T.muted, cursor: "pointer" }}><LogOut size={15} /></span>
-      </div>
     </div>
   );
 }
@@ -406,8 +366,21 @@ function Portfolio({ state, persist, onOpen }) {
   const bugs = projects.reduce((s, p) => s + openBugs(p), 0);
   const near = projects.map((p) => daysTo(p.milestoneDate)).filter((d) => d != null && d >= 0).sort((a, b) => a - b)[0];
   const addProject = () => {
-    const np = { id: uid(), name: "Nový projekt", subtitle: "", milestoneName: "", milestoneDate: "", groups: [], cycles: [] };
+    const name = (typeof window !== "undefined" ? window.prompt("Názov nového projektu:", "") : "") || "";
+    if (name === null) return;
+    const np = { id: uid(), name: name.trim() || "Nový projekt", subtitle: "", milestoneName: "", milestoneDate: "", groups: [], scenarios: [], issues: [], documents: [], rounds: ["Kolo 1"], phases: [{ key: "F0", planned: "", original: "" }, { key: "F1", planned: "", original: "" }], live: [] };
     persist({ ...state, projects: [...projects, np] });
+  };
+  const renameProject = (id) => {
+    const cur = projects.find((p) => p.id === id);
+    const name = typeof window !== "undefined" ? window.prompt("Nový názov projektu:", cur ? cur.name : "") : null;
+    if (name == null || !name.trim()) return;
+    persist({ ...state, projects: projects.map((p) => (p.id === id ? { ...p, name: name.trim() } : p)) });
+  };
+  const deleteProject = (id) => {
+    const cur = projects.find((p) => p.id === id);
+    if (typeof window !== "undefined" && !window.confirm(`Zmazať projekt „${cur ? cur.name : ""}"? Táto akcia je nevratná.`)) return;
+    persist({ ...state, projects: projects.filter((p) => p.id !== id) });
   };
   return (
     <div style={{ padding: "12px 16px" }}>
@@ -422,7 +395,7 @@ function Portfolio({ state, persist, onOpen }) {
         <Metric label="Najbližší míľnik" value={near == null ? "–" : near + " dní"} color={T.amber} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 12 }}>
-        {projects.map((p) => <ProjectCard key={p.id} p={p} onOpen={() => onOpen(p.id)} />)}
+        {projects.map((p) => <ProjectCard key={p.id} p={p} onOpen={() => onOpen(p.id)} onRename={() => renameProject(p.id)} onDelete={() => deleteProject(p.id)} />)}
         <div onClick={addProject} style={{ border: `1px dashed ${T.border}`, borderRadius: 12, padding: 14, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, color: T.muted, minHeight: 170, cursor: "pointer" }}>
           <span style={{ width: 38, height: 38, borderRadius: 10, background: T.panel, border: `1px solid ${T.border}`, display: "grid", placeItems: "center", color: T.green }}><Plus size={20} /></span>
           <div style={{ fontSize: 12.5, color: T.text, fontWeight: 500 }}>Nový projekt</div>
@@ -437,12 +410,16 @@ function Metric({ label, value, color }) {
     <div style={{ fontSize: 20, fontWeight: 500, color: color || T.text }}>{value}</div>
   </div>;
 }
-function ProjectCard({ p, onOpen }) {
+function ProjectCard({ p, onOpen, onRename, onDelete }) {
   const r = projectReadiness(p); const s = statusSplit(p); const d = daysTo(p.milestoneDate);
   return (
     <div style={{ background: T.panel, border: `2px solid ${T.green}`, borderRadius: 12, padding: 14, display: "flex", flexDirection: "column", gap: 11 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-        <div><div style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</div><div style={{ fontSize: 11, color: T.muted }}>{p.subtitle}</div></div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+        <div style={{ minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</div><div style={{ fontSize: 11, color: T.muted }}>{p.subtitle}</div></div>
+        <div style={{ display: "flex", gap: 4, flex: "none" }}>
+          <span onClick={onRename} title="Premenovať" style={{ cursor: "pointer", color: T.dim, display: "inline-flex" }}><FileText size={14} /></span>
+          <span onClick={onDelete} title="Zmazať projekt" style={{ cursor: "pointer", color: T.dim, display: "inline-flex" }}><Trash2 size={14} /></span>
+        </div>
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}><span style={{ fontSize: 28, fontWeight: 500, color: T.green, lineHeight: 1 }}>{r}%</span><span style={{ fontSize: 11, color: T.muted }}>pripravenosť</span></div>
       <SplitBar s={s} h={8} />
@@ -465,8 +442,8 @@ function SplitBar({ s, h = 8 }) {
 }
 
 /* ───────────────────────── project view ───────────────────────── */
-const TABS = [["prehlad", "Prehľad"], ["tok", "Procesný tok"], ["test", "Testovanie"], ["jira", "Odkazy"], ["dok", "Dokument"]];
-function ProjectView({ project, setProject, me, tab, setTab }) {
+const TABS = [["prehlad", "Prehľad"], ["tok", "Procesný tok"], ["test", "Testovanie"], ["live", "LIVE"], ["jira", "Odkazy"], ["dok", "Dokument"]];
+function ProjectView({ project, setProject, tab, setTab }) {
   const [showImport, setShowImport] = useState(false);
   if (!project) return <div style={{ padding: 24, color: T.muted }}>Projekt neexistuje.</div>;
   return (
@@ -486,11 +463,12 @@ function ProjectView({ project, setProject, me, tab, setTab }) {
       <div style={{ padding: "14px 16px" }}>
         {tab === "prehlad" && <Prehlad project={project} setProject={setProject} />}
         {tab === "tok" && <ProcesnyTok project={project} setProject={setProject} />}
-        {tab === "test" && <Testovanie project={project} setProject={setProject} me={me} />}
+        {tab === "test" && <Testovanie project={project} setProject={setProject} />}
+        {tab === "live" && <LiveTab project={project} setProject={setProject} />}
         {tab === "jira" && <OdkazyTab project={project} />}
-        {tab === "dok" && <DokumentTab project={project} setProject={setProject} me={me} />}
+        {tab === "dok" && <DokumentTab project={project} setProject={setProject} />}
       </div>
-      {showImport && <ImportModal project={project} setProject={setProject} me={me} onClose={() => setShowImport(false)} />}
+      {showImport && <ImportModal project={project} setProject={setProject} onClose={() => setShowImport(false)} />}
       <ChatWidget project={project} />
     </div>
   );
@@ -602,38 +580,16 @@ function Prehlad({ project, setProject }) {
             ); })}
           </div>
         </div>
-        <div style={{ fontSize: 11, color: T.muted, marginBottom: 8 }}>Analýza fáz — F0/F1 × MOCK/HW × status</div>
+        <div style={{ fontSize: 11, color: T.muted, marginBottom: 8 }}>Analýza fáz — fáza × prostredie × status</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
-          <PhaseCell title="F0 · MOCK" count={env("F0", "MOCK").total} m={env("F0", "MOCK")} />
-          <PhaseCell title="F0 · HW" count={env("F0", "HW").total} m={env("F0", "HW")} />
-          <PhaseCell title="F1 · MOCK" count={env("F1", "MOCK").total} m={env("F1", "MOCK")} />
-          <PhaseCell title="F1 · HW" count={env("F1", "HW").total} m={env("F1", "HW")} />
+          {Object.keys(pm).sort().flatMap((ph) => ENVS.filter((e) => pm[ph][e]).map((e) => (
+            <PhaseCell key={ph + e} title={`${ph} · ${e}`} count={pm[ph][e].total} m={pm[ph][e]} />
+          )))}
+          {Object.keys(pm).length === 0 && <div style={{ fontSize: 11.5, color: T.dim }}>Žiadne funkčné scenáre.</div>}
         </div>
       </div>
 
       <PhasesCard project={project} setProject={setProject} />
-
-      <div style={{ ...card, padding: "13px 14px" }}>
-        <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 12 }}>Heatmapa procesov <span style={{ fontSize: 11, color: T.muted, fontWeight: 400 }}>— stav testov</span></div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {project.groups.map((g) => (
-            <div key={g.id}>
-              <div style={{ fontSize: 11, color: T.muted, marginBottom: 6 }}>{g.name}</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {g.processes.map((p) => { const ts = processTestState(project, p.name); return (
-                  <span key={p.id} title={`${p.name} · ${ts.label}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, background: T.panel2, border: `1px solid ${T.border}`, borderLeft: `3px solid ${ts.color}`, borderRadius: 6, padding: "4px 8px", maxWidth: 240 }}>
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span><span style={{ color: T.muted }}>{ts.label}</span>
-                  </span>
-                ); })}
-              </div>
-            </div>
-          ))}
-          {project.groups.length === 0 && <div style={{ color: T.dim, fontSize: 12 }}>Zatiaľ žiadne procesy.</div>}
-        </div>
-        <div style={{ display: "flex", gap: 14, marginTop: 12, fontSize: 10.5, color: T.muted, flexWrap: "wrap" }}>
-          <Leg c={T.green} t="všetko Done" /><Leg c={T.amber} t="prebieha" /><Leg c={T.red} t="TBD" /><Leg c={T.slate} t="bez testov" />
-        </div>
-      </div>
 
       <div style={{ ...card, padding: "13px 14px" }}>
         <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 10 }}>Otvorené bugy ({lastBugs.length})</div>
@@ -979,7 +935,7 @@ function downloadDrawio(project) {
 
 /* ── Testovanie (cykly + testy + pokusy) ── */
 /* ── Testovanie (scenáre podľa kategórie + procesu, F0/F1, MOCK/HW) ── */
-function Testovanie({ project, setProject, me }) {
+function Testovanie({ project, setProject }) {
   const [cat, setCat] = useState("func");
   const [fPhase, setFPhase] = useState("all");
   const [fEnv, setFEnv] = useState("all");
@@ -1026,7 +982,7 @@ function Testovanie({ project, setProject, me }) {
         <div key={proc} style={{ marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: T.greenDeep }} /><span style={{ fontSize: 12.5, fontWeight: 500 }}>{proc}</span><span style={{ fontSize: 10.5, color: T.muted }}>{list.length}</span></div>
           <div style={{ border: `1px solid ${T.borderSoft}`, borderRadius: 10, overflow: "hidden" }}>
-            {list.map((s, i) => <ScenRow key={s.id} s={s} last={i === list.length - 1} open={open === s.id} onToggle={() => setOpen(open === s.id ? null : s.id)} onUpdate={(fn) => setScen(s.id, fn)} rounds={rounds} me={me} />)}
+            {list.map((s, i) => <ScenRow key={s.id} s={s} last={i === list.length - 1} open={open === s.id} onToggle={() => setOpen(open === s.id ? null : s.id)} onUpdate={(fn) => setScen(s.id, fn)} rounds={rounds} />)}
           </div>
         </div>
       ))}
@@ -1043,7 +999,7 @@ function Seg({ label, opts, val, set }) {
     </div>
   </div>;
 }
-function ScenRow({ s, last, open, onToggle, onUpdate, rounds, me }) {
+function ScenRow({ s, last, open, onToggle, onUpdate, rounds }) {
   const ev = evalTest(s);
   return (
     <div style={{ borderBottom: last && !open ? "none" : `1px solid ${T.borderSoft}` }}>
@@ -1057,16 +1013,16 @@ function ScenRow({ s, last, open, onToggle, onUpdate, rounds, me }) {
         {ev.n > 0 && <span style={{ fontSize: 10.5, color: T.muted, flex: "none" }}>{ev.ok}/{ev.n}</span>}
         <Pill bg={TS_COLOR[s.status || "TBD"]} fg={"#08160c"}>{s.status || "TBD"}</Pill>
       </div>
-      {open && <ScenDetail s={s} onUpdate={onUpdate} rounds={rounds} me={me} />}
+      {open && <ScenDetail s={s} onUpdate={onUpdate} rounds={rounds} />}
     </div>
   );
 }
-function ScenDetail({ s, onUpdate, rounds, me }) {
+function ScenDetail({ s, onUpdate, rounds }) {
   const ev = evalTest(s);
   const [lk, setLk] = useState({ url: "", label: "" });
   const [round, setRound] = useState((rounds && rounds[rounds.length - 1]) || "Kolo 1");
   const field = { background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px", color: T.text, fontSize: 12, width: "100%", boxSizing: "border-box", outline: "none" };
-  const addAttempt = () => onUpdate((x) => ({ ...x, attempts: [...(x.attempts || []), { id: uid(), text: "", ok: true, at: new Date().toISOString().slice(0, 10), round }] }));
+  const addAttempt = () => onUpdate((x) => ({ ...x, attempts: [...(x.attempts || []), { id: uid(), text: "", ok: true, at: new Date().toISOString().slice(0, 10), round, by: "" }] }));
   const ro = { fontSize: 12, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px", color: T.text2, minHeight: 20, whiteSpace: "pre-wrap" };
   return (
     <div style={{ padding: "12px 14px 14px", background: T.panel2, borderTop: `1px solid ${T.borderSoft}`, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1094,6 +1050,7 @@ function ScenDetail({ s, onUpdate, rounds, me }) {
               <span style={{ fontSize: 10, color: T.muted, fontFamily: "ui-monospace,monospace", width: 16, textAlign: "center" }}>{i + 1}</span>
               {a.round && <span style={{ fontSize: 9, color: T.dim, border: `1px solid ${T.border}`, borderRadius: 4, padding: "1px 4px" }}>{a.round}</span>}
               <input value={a.text} placeholder="čo sa stalo…" onChange={(e) => onUpdate((x) => ({ ...x, attempts: x.attempts.map((y) => (y.id === a.id ? { ...y, text: e.target.value } : y)) }))} style={{ flex: 1, background: "transparent", border: "none", color: T.text2, fontSize: 12, outline: "none", minWidth: 0 }} />
+              <input value={a.by || ""} placeholder="ini" title="Iniciály testera" maxLength={5} onChange={(e) => onUpdate((x) => ({ ...x, attempts: x.attempts.map((y) => (y.id === a.id ? { ...y, by: e.target.value } : y)) }))} style={{ width: 42, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 6, padding: "2px 5px", color: T.text, fontSize: 11, outline: "none", textAlign: "center", flex: "none" }} />
               {["OK", "Fail"].map((v) => { const ok = v === "OK"; const on = a.ok === ok; return <span key={v} onClick={() => onUpdate((x) => ({ ...x, attempts: x.attempts.map((y) => (y.id === a.id ? { ...y, ok } : y)) }))} style={{ fontSize: 10, borderRadius: 99, padding: "2px 8px", cursor: "pointer", fontWeight: 500, background: on ? (ok ? T.green : T.red) : T.borderSoft, color: on ? "#08160c" : T.muted }}>{v}</span>; })}
               <Trash2 size={13} color={T.dim} style={{ cursor: "pointer" }} onClick={() => onUpdate((x) => ({ ...x, attempts: x.attempts.filter((y) => y.id !== a.id) }))} />
             </div>
@@ -1131,6 +1088,87 @@ function SelField({ label, val, opts, onChange, color }) {
 }
 
 function Lbl({ children }) { return <div style={{ fontSize: 10.5, color: T.muted, marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>{children}</div>; }
+
+/* ── LIVE (ostrá prevádzka: bugy, úpravy procesov) ── */
+const LIVE_TYPES = ["Bug", "Úprava procesu", "Iné"];
+const LIVE_STATUS = ["Otvorené", "Rieši sa", "Vyriešené"];
+const LIVEST_COLOR = { "Otvorené": T.red, "Rieši sa": T.amber, "Vyriešené": T.green };
+function LiveTab({ project, setProject }) {
+  const items = project.live || [];
+  const [fStatus, setFStatus] = useState("all");
+  const [open, setOpen] = useState(null);
+  const setItem = (id, fn) => setProject((pr) => ({ ...pr, live: (pr.live || []).map((x) => (x.id === id ? fn(x) : x)) }));
+  const addItem = () => {
+    const it = { id: uid(), title: "Nový záznam", type: "Bug", status: "Otvorené", env: "PROD", process: "", note: "", by: "", date: new Date().toISOString().slice(0, 10), links: [] };
+    setProject((pr) => ({ ...pr, live: [it, ...(pr.live || [])] }));
+    setOpen(it.id);
+  };
+  const delItem = (id) => setProject((pr) => ({ ...pr, live: (pr.live || []).filter((x) => x.id !== id) }));
+  const list = fStatus === "all" ? items : items.filter((x) => x.status === fStatus);
+  const cnt = (s) => items.filter((x) => x.status === s).length;
+  const field = { background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px", color: T.text, fontSize: 12, width: "100%", boxSizing: "border-box", outline: "none" };
+  const [lk, setLk] = useState({});
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 7 }}><PlayCircle size={16} color={T.green} />Spustenie LIVE</span>
+          <span style={{ fontSize: 11, color: T.muted }}>ostrá prevádzka — bugy, úpravy procesov</span>
+        </div>
+        <button onClick={addItem} style={{ fontSize: 12, background: T.green, color: T.bg, border: "none", borderRadius: 8, padding: "6px 11px", fontWeight: 500, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><Plus size={14} />Nový záznam</button>
+      </div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+        {[["all", "Všetko", items.length], ...LIVE_STATUS.map((s) => [s, s, cnt(s)])].map(([k, lbl, n]) => (
+          <span key={k} onClick={() => setFStatus(k)} style={{ fontSize: 12, background: fStatus === k ? "rgba(0,184,74,.1)" : T.panel, border: `1px solid ${fStatus === k ? T.green : T.border}`, borderRadius: 8, padding: "5px 10px", color: fStatus === k ? T.text : T.muted, cursor: "pointer" }}>{lbl} <span style={{ opacity: .7 }}>{n}</span></span>
+        ))}
+      </div>
+      <div style={{ border: `1px solid ${T.borderSoft}`, borderRadius: 10, overflow: "hidden" }}>
+        {list.map((it, i) => (
+          <div key={it.id} style={{ borderBottom: i === list.length - 1 && open !== it.id ? "none" : `1px solid ${T.borderSoft}` }}>
+            <div onClick={() => setOpen(open === it.id ? null : it.id)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", cursor: "pointer", background: open === it.id ? T.panel : "transparent" }}>
+              {open === it.id ? <ChevronDown size={15} color={T.green} /> : <ChevronRight size={15} color={T.muted} />}
+              <span style={{ fontSize: 9.5, color: T.muted, border: `1px solid ${T.border}`, borderRadius: 4, padding: "1px 5px", flex: "none" }}>{it.type}</span>
+              <span style={{ flex: 1, fontSize: 12, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: open === it.id ? 500 : 400 }}>{it.title}</span>
+              {it.env && <span style={{ fontSize: 9.5, color: T.dim, flex: "none" }}>{it.env}</span>}
+              {it.by && <span style={{ fontSize: 10, color: T.muted, flex: "none" }}>{it.by}</span>}
+              <Pill bg={LIVEST_COLOR[it.status]} fg={it.status === "Vyriešené" ? "#08160c" : "#08160c"}>{it.status}</Pill>
+            </div>
+            {open === it.id && (
+              <div style={{ padding: "12px 14px 14px", background: T.panel2, borderTop: `1px solid ${T.borderSoft}`, display: "flex", flexDirection: "column", gap: 10 }}>
+                <input value={it.title} onChange={(e) => setItem(it.id, (x) => ({ ...x, title: e.target.value }))} style={{ ...field, fontWeight: 500 }} />
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <SelField label="Typ" val={it.type} opts={LIVE_TYPES} onChange={(v) => setItem(it.id, (x) => ({ ...x, type: v }))} />
+                  <SelField label="Status" val={it.status} opts={LIVE_STATUS} onChange={(v) => setItem(it.id, (x) => ({ ...x, status: v }))} color={LIVEST_COLOR[it.status]} />
+                  <SelField label="Prostredie" val={it.env || ""} opts={["", ...ENVS]} onChange={(v) => setItem(it.id, (x) => ({ ...x, env: v }))} />
+                  <div><Lbl>Proces</Lbl><input value={it.process || ""} onChange={(e) => setItem(it.id, (x) => ({ ...x, process: e.target.value }))} style={{ ...field, width: 160 }} /></div>
+                  <div><Lbl>Iniciály</Lbl><input value={it.by || ""} maxLength={5} onChange={(e) => setItem(it.id, (x) => ({ ...x, by: e.target.value }))} style={{ ...field, width: 70, textAlign: "center" }} /></div>
+                  <div><Lbl>Dátum</Lbl><input type="date" value={it.date || ""} onChange={(e) => setItem(it.id, (x) => ({ ...x, date: e.target.value }))} style={{ ...field, width: 150, colorScheme: "dark" }} /></div>
+                </div>
+                <div><Lbl>Popis / riešenie</Lbl><textarea value={it.note || ""} onChange={(e) => setItem(it.id, (x) => ({ ...x, note: e.target.value }))} rows={3} style={{ ...field, resize: "vertical" }} /></div>
+                <div>
+                  <Lbl><Link2 size={13} /> Odkazy (Jira/KVD, …)</Lbl>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                    {(it.links || []).map((l, j) => <span key={j} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: T.panel, border: `1px solid ${T.border}`, borderRadius: 8, padding: "4px 8px" }}><LinkChip link={l} /><X size={12} color={T.dim} style={{ cursor: "pointer" }} onClick={() => setItem(it.id, (x) => ({ ...x, links: x.links.filter((_, k) => k !== j) }))} /></span>)}
+                    {(it.links || []).length === 0 && <span style={{ fontSize: 11.5, color: T.dim }}>Žiadny odkaz.</span>}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <input value={(lk[it.id] || {}).url || ""} placeholder="URL / kľúč" onChange={(e) => setLk((v) => ({ ...v, [it.id]: { ...(v[it.id] || {}), url: e.target.value } }))} style={{ ...field, flex: 2, minWidth: 150 }} />
+                    <input value={(lk[it.id] || {}).label || ""} placeholder="štítok" onChange={(e) => setLk((v) => ({ ...v, [it.id]: { ...(v[it.id] || {}), label: e.target.value } }))} style={{ ...field, flex: 1, minWidth: 90 }} />
+                    <button onClick={() => { const L2 = lk[it.id] || {}; if (!L2.url || !L2.url.trim()) return; setItem(it.id, (x) => ({ ...x, links: [...(x.links || []), { url: L2.url, label: L2.label || "" }] })); setLk((v) => ({ ...v, [it.id]: { url: "", label: "" } })); }} style={{ background: T.panel, border: `1px solid ${T.border}`, color: T.text, borderRadius: 8, padding: "0 12px", cursor: "pointer", fontSize: 12 }}>Pridať</button>
+                  </div>
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", borderTop: `1px solid ${T.borderSoft}`, paddingTop: 10 }}>
+                  <span onClick={() => delItem(it.id)} style={{ fontSize: 11.5, color: T.red, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}><Trash2 size={13} />Zmazať záznam</span>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+        {list.length === 0 && <div style={{ padding: 20, color: T.dim, fontSize: 12.5, textAlign: "center" }}>Žiadne LIVE záznamy. Sem pribúdajú bugy a úpravy z ostrej prevádzky.</div>}
+      </div>
+    </div>
+  );
+}
 
 /* ── Odkazy tab ── */
 function OdkazyTab({ project }) {
@@ -1267,7 +1305,7 @@ async function parseTestsFile(file) {
 }
 
 /* ───────────────────────── import modal ───────────────────────── */
-function ImportModal({ project, setProject, me, onClose }) {
+function ImportModal({ project, setProject, onClose }) {
   const [mode, setMode] = useState("jira"); // jira | doc
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -1321,7 +1359,7 @@ function ImportModal({ project, setProject, me, onClose }) {
         });
       });
       const documents = [...(pr.documents || []), { id: uid(), name: preview.fileName, type: preview.fileType,
-        uploadedBy: me.email, date: new Date().toISOString().slice(0, 10), text: (preview.text || "").slice(0, 20000) }];
+        uploadedBy: "", date: new Date().toISOString().slice(0, 10), text: (preview.text || "").slice(0, 20000) }];
       return { ...pr, groups, documents };
     });
     onClose();
@@ -1335,7 +1373,7 @@ function ImportModal({ project, setProject, me, onClose }) {
       let scenarios;
       if (replaceScen) scenarios = incoming;
       else { scenarios = [...(pr.scenarios || [])]; const seen = new Set(scenarios.map((s) => (s.code || s.name || "").toLowerCase())); incoming.forEach((s) => { const k = (s.code || s.name || "").toLowerCase(); if (!(k && seen.has(k))) scenarios.push(s); }); }
-      const documents = [...(pr.documents || []), { id: uid(), name: preview.fileName, type: preview.fileType, uploadedBy: me.email, date: new Date().toISOString().slice(0, 10), text: "" }];
+      const documents = [...(pr.documents || []), { id: uid(), name: preview.fileName, type: preview.fileType, uploadedBy: "", date: new Date().toISOString().slice(0, 10), text: "" }];
       return { ...pr, scenarios, documents };
     });
     onClose();
@@ -1436,7 +1474,7 @@ function Actions({ onCancel, onApply, label }) {
 }
 
 /* ───────────────────────── Dokument tab (upload + cleanup) ───────────────────────── */
-function DokumentTab({ project, setProject, me }) {
+function DokumentTab({ project, setProject }) {
   const docs = project.documents || [];
   const [sel, setSel] = useState({});
   const toggle = (id) => setSel((s) => ({ ...s, [id]: !s[id] }));
