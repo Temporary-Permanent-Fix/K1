@@ -33,7 +33,7 @@ const T = {
   amber: "#D29922", red: "#F85149", slate: "#3D444D", blue: "#378ADD",
 };
 const STATUS = {
-  Done: T.green, Prebieha: T.amber, Blocked: T.red, "Out of scope": T.dim, Nezačaté: T.slate,
+  Done: T.green, Prebieha: T.amber, Blocked: T.red, "Out of scope": T.slate, Nezačaté: T.dim,
 };
 const TEST_RESULT = { OK: T.green, BUG: T.red, Blocked: T.amber, "Out of scope": T.dim, "": T.slate };
 const SEVERITIES = ["Nízka", "Stredná", "Vysoká", "Kritická"];
@@ -41,7 +41,10 @@ const BUG_STATUS = ["Otvorený", "V riešení", "Vyriešený"];
 const SEV_COLOR = { "Nízka": T.dim, "Stredná": T.amber, "Vysoká": T.red, "Kritická": T.red };
 const BUGST_COLOR = { "Otvorený": T.red, "V riešení": T.amber, "Vyriešený": T.green };
 const TEST_STATUS = ["TBD", "IN TESTING", "Done"];
-const TS_COLOR = { "Done": T.green, "IN TESTING": T.amber, "TBD": T.red, "": T.slate };
+const TS_COLOR = { "Done": T.green, "IN TESTING": T.amber, "TBD": T.slate, "": T.slate };
+const TS_LABEL = { "Done": "Hotové", "IN TESTING": "Testuje sa", "TBD": "Čaká" };
+const STATUS_LABEL = { "Done": "Hotové", "Prebieha": "Prebieha", "Blocked": "Blokované", "Nezačaté": "Nezačaté", "Out of scope": "Mimo rozsah" };
+const PRIO_LABEL = { "CRITICAL": "Kritická", "HIGH": "Vysoká", "MEDIUM": "Stredná", "LOW": "Nízka" };
 const CATS = [["func", "Funkčné"], ["sec", "Bezpečnostné"], ["perf", "Výkonnostné"]];
 const CAT_LABEL = { func: "Funkčné", sec: "Bezpečnostné", perf: "Výkonnostné" };
 const PRIO_WEIGHT = { CRITICAL: 3, HIGH: 2, MEDIUM: 1, LOW: 0.5, "": 1 };
@@ -281,14 +284,15 @@ function openBugList(pr) {
 
 /* ───────────────────────── small UI ───────────────────────── */
 const card = { background: T.panel, border: `1px solid ${T.borderSoft}`, borderRadius: 12 };
-function Pill({ children, bg, fg }) {
-  return <span style={{ fontSize: 10.5, background: bg, color: fg, borderRadius: 99, padding: "2px 8px", fontWeight: 500, whiteSpace: "nowrap" }}>{children}</span>;
+function Pill({ children, bg, fg, dashed }) {
+  return <span style={{ fontSize: 10.5, background: bg, color: fg, border: dashed ? `1px dashed ${T.dim}` : "none", borderRadius: 99, padding: "2px 8px", fontWeight: 500, whiteSpace: "nowrap" }}>{children}</span>;
 }
 function statusPill(status) {
+  if (status === "Out of scope") return <Pill bg={T.panel2} fg={T.muted} dashed>{STATUS_LABEL[status]}</Pill>;
   const c = STATUS[status] || T.slate;
-  const fg = status === "Nezačaté" || status === "Out of scope" ? T.muted : "#08160c";
   const bg = status === "Nezačaté" ? T.borderSoft : c;
-  return <Pill bg={bg} fg={status === "Nezačaté" ? T.muted : fg}>{status}</Pill>;
+  const fg = status === "Nezačaté" ? T.muted : "#08160c";
+  return <Pill bg={bg} fg={fg}>{STATUS_LABEL[status] || status}</Pill>;
 }
 function LinkChip({ link }) {
   const url = normalizeUrl(link.url);
@@ -476,7 +480,7 @@ function ProjectView({ project, setProject, tab, setTab }) {
 
 /* ── Prehľad ── */
 function PhaseCell({ title, count, m }) {
-  const rows = [["Done", "Done"], ["IN TESTING", "IN testing"], ["TBD", "TBD"]];
+  const rows = [["Done", "Hotové"], ["IN TESTING", "Testuje sa"], ["TBD", "Čaká"]];
   return (
     <div style={{ background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, overflow: "hidden" }}>
       <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 9px", background: T.panel, borderBottom: `1px solid ${T.border}`, fontSize: 11 }}><span style={{ fontWeight: 500 }}>{title}</span><span style={{ color: T.muted }}>{count}</span></div>
@@ -559,17 +563,17 @@ function Prehlad({ project, setProject }) {
             </div>
             <div style={{ display: "flex", gap: 10, marginTop: 11, flexWrap: "wrap", fontSize: 11 }}>
               <span style={{ background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "5px 9px" }}>Interné bugy <b style={{ color: logBugs ? T.red : T.text }}>{logBugs}</b></span>
-              <span style={{ background: T.panel2, border: `1px dashed ${T.amber}`, borderRadius: 7, padding: "5px 9px", color: T.amber }}>KVADOS bugy <b>{kvdBugs}</b></span>
+              <span style={{ background: T.panel2, border: `1px dashed ${T.border}`, borderRadius: 7, padding: "5px 9px", color: T.muted }}>KVADOS bugy <b style={{ color: kvdBugs ? T.red : T.text }}>{kvdBugs}</b></span>
             </div>
           </div>
         </div>
       </div>
 
-      <div style={{ background: T.panel, border: `1px solid ${T.borderSoft}`, borderLeft: `3px solid ${T.blue}`, borderRadius: "0 12px 12px 0", padding: "14px 16px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><ListChecks size={16} color={T.blue} /><span style={{ fontSize: 13, fontWeight: 500 }}>TESTY</span><span style={{ fontSize: 11, color: T.muted }}>— {ss.total} test casov (test-based)</span></div>
+      <div style={{ background: T.panel, border: `1px solid ${T.borderSoft}`, borderLeft: `3px solid ${T.slate}`, borderRadius: "0 12px 12px 0", padding: "14px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><ListChecks size={16} color={T.green} /><span style={{ fontSize: 13, fontWeight: 500 }}>TESTY</span><span style={{ fontSize: 11, color: T.muted }}>— {ss.total} test casov (test-based)</span></div>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start", marginBottom: 14 }}>
           <div style={{ minWidth: 130 }}>
-            <div style={{ fontSize: 38, fontWeight: 500, color: T.blue, lineHeight: 1 }}>{ss.pct}%</div>
+            <div style={{ fontSize: 38, fontWeight: 500, color: T.green, lineHeight: 1 }}>{ss.pct}%</div>
             <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>hotové testy ({ss.Done}/{ss.total})</div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 9, fontSize: 11, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 9px" }}><Target size={13} color={T.amber} />prioritne vážené: <b style={{ color: T.amber }}>{pw}%</b></div>
           </div>
@@ -596,9 +600,9 @@ function Prehlad({ project, setProject }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 9, fontSize: 12 }}>
           {lastBugs.slice(0, 8).map((b) => (
             <div key={b.key} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <span style={{ width: 7, height: 7, borderRadius: 99, background: b.origin === "supplier" ? T.amber : T.red, flex: "none" }} />
+              <span style={{ width: 7, height: 7, borderRadius: 99, background: T.red, flex: "none" }} />
               <a href={b.url} target="_blank" rel="noopener noreferrer" style={{ color: T.greenLink, textDecoration: "none", fontFamily: "ui-monospace,monospace", fontSize: 11.5, flex: "none" }}>{b.key}</a>
-              {b.origin === "supplier" && <span style={{ fontSize: 8, color: T.amber, border: `1px solid ${T.amber}`, borderRadius: 4, padding: "0 3px", flex: "none" }}>KVADOS</span>}
+              {b.origin === "supplier" && <span style={{ fontSize: 8, color: T.amber, border: `1px solid ${T.amber}`, borderRadius: 4, padding: "0 3px", flex: "none", color: T.muted, borderColor: T.border }}>KVADOS</span>}
               <span style={{ color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.title}</span>
               <span style={{ color: T.dim, fontSize: 10.5, flex: "none" }}>{b.status}</span>
             </div>
@@ -696,7 +700,7 @@ function ProcesnyTok({ project, setProject }) {
                     return <span key={p.id} onClick={() => setSel(p.id)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 6px", borderRadius: 6, cursor: "pointer", color: on ? T.text : T.muted, background: on ? "rgba(0,184,74,.1)" : "transparent", border: `1px solid ${on ? "rgba(0,184,74,.35)" : "transparent"}` }}>
                       <span style={{ width: 6, height: 6, borderRadius: 99, background: STATUS[p.status] || T.slate, flex: "none" }} />
                       <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
-                      {p.priority && <span title={"Priorita: " + p.priority} style={{ width: 6, height: 6, borderRadius: 99, background: PRIO_COLOR[p.priority] || T.dim, flex: "none" }} />}
+                      {p.priority && <span title={"Priorita: " + p.priority} style={{ width: 6, height: 6, borderRadius: 99, background: p.priority === "Vysoká" ? T.red : T.dim, flex: "none" }} />}
                     </span>;
                   })}
                   {edit && <span onClick={() => addProcess(g.id)} style={{ display: "inline-flex", alignItems: "center", gap: 5, color: T.green, cursor: "pointer", padding: "3px 6px" }}><Plus size={13} />proces</span>}
@@ -761,8 +765,8 @@ function FlowDetail({ entry, onUpdate, onDelete, edit, issues = [] }) {
           </>
         ) : (
           <><span style={{ fontSize: 15, fontWeight: 500 }}>{p.name}</span>{statusPill(p.status)}
-            {p.phase && <Pill bg={"rgba(55,138,221,.15)"} fg={T.blue}>{p.phase}</Pill>}
-            {p.priority && <Pill bg={T.panel2} fg={PRIO_COLOR[p.priority] || T.dim}>priorita: {p.priority}</Pill>}</>
+            {p.phase && <Pill bg={T.panel2} fg={T.muted}>{p.phase}</Pill>}
+            {p.priority && <Pill bg={T.panel2} fg={T.muted}>priorita: {p.priority}</Pill>}</>
         )}
       </div>
       {edit ? (
@@ -857,9 +861,16 @@ function StepEditor({ st, inp, nb, issues, onSet, onDel, onMove, onAddLink, onDe
 
 /* ── Diagram (vlastný render z dát) ── */
 function nodeColor(status) { return STATUS[status] || T.slate; }
+function issueColor(it) {
+  const t = (it.type || "").toLowerCase(), s = (it.status || "").toLowerCase();
+  if (t === "bug" && ["closed", "done", "hotovo", "vyriešené", "resolved"].includes(s)) return T.slate; // hotový bug = šedý
+  return nodeColor(bucketOf(it.status, it.type));
+}
 function DiagramView({ project }) {
   const allIssues = project.issues || [];
-  const [orig, setOrig] = useState("all"); // all | internal | supplier
+  const [orig, setOrig] = useState("all");
+  const [showLinks, setShowLinks] = useState(true);
+  const has = useMemo(() => new Set(allIssues.map((i) => i.key)), [allIssues]);
   const issues = useMemo(() => orig === "all" ? allIssues : allIssues.filter((i) => (i.origin || originOf(i.key)) === orig), [allIssues, orig]);
   const counts = useMemo(() => ({
     all: allIssues.length,
@@ -869,15 +880,24 @@ function DiagramView({ project }) {
   const cols = useMemo(() => {
     const map = {};
     issues.forEach((it) => { const k = it.epic || "Bez oblasti"; (map[k] ||= []).push(it); });
-    return Object.entries(map);
+    return Object.entries(map).sort((a, b) => b[1].length - a[1].length);
   }, [issues]);
+  const linkChip = (dir, key) => (
+    <a key={dir + key} href={JIRA_BASE + key} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+      style={{ fontSize: 9, fontFamily: "ui-monospace,monospace", textDecoration: "none", color: T.muted, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 4, padding: "0 4px", display: "inline-flex", alignItems: "center", gap: 2 }}>
+      {dir === "block" ? "blokuje →" : dir === "blockedBy" ? "← blokuje ho" : "~"} {key}
+    </a>
+  );
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-        <div style={{ display: "inline-flex", background: T.panel, border: `1px solid ${T.border}`, borderRadius: 9, padding: 3, gap: 3 }}>
-          {[["all", "Všetko"], ["internal", "Interné"], ["supplier", "KVADOS"]].map(([k, lbl]) => (
-            <span key={k} onClick={() => setOrig(k)} style={{ fontSize: 11.5, padding: "5px 11px", borderRadius: 7, cursor: "pointer", background: orig === k ? T.green : "transparent", color: orig === k ? T.bg : T.muted, fontWeight: orig === k ? 500 : 400 }}>{lbl} <span style={{ opacity: .7 }}>{counts[k]}</span></span>
-          ))}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ display: "inline-flex", background: T.panel, border: `1px solid ${T.border}`, borderRadius: 9, padding: 3, gap: 3 }}>
+            {[["all", "Všetko"], ["internal", "Interné"], ["supplier", "KVADOS"]].map(([k, lbl]) => (
+              <span key={k} onClick={() => setOrig(k)} style={{ fontSize: 11.5, padding: "5px 11px", borderRadius: 7, cursor: "pointer", background: orig === k ? T.green : "transparent", color: orig === k ? T.bg : T.muted, fontWeight: orig === k ? 500 : 400 }}>{lbl} <span style={{ opacity: .7 }}>{counts[k]}</span></span>
+            ))}
+          </div>
+          <span onClick={() => setShowLinks((v) => !v)} style={{ fontSize: 11.5, padding: "5px 11px", borderRadius: 8, cursor: "pointer", background: showLinks ? "rgba(0,184,74,.12)" : T.panel, border: `1px solid ${showLinks ? T.green : T.border}`, color: showLinks ? T.text : T.muted, display: "inline-flex", alignItems: "center", gap: 5 }}><Link2 size={13} />väzby</span>
         </div>
         <span style={{ fontSize: 11, color: T.green, background: "rgba(0,184,74,.1)", border: `1px solid rgba(0,184,74,.35)`, borderRadius: 8, padding: "5px 9px", display: "inline-flex", alignItems: "center", gap: 5 }}><RefreshCw size={13} />auto-sync · {issues.length} uzlov</span>
       </div>
@@ -886,27 +906,31 @@ function DiagramView({ project }) {
           Žiadne Jira issues. Použi <b style={{ color: T.text }}>Import → Jira</b> a diagram sa vygeneruje automaticky.
         </div>
       ) : (
-        <div style={{ background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 10, padding: 14, overflowX: "auto" }}>
-          <div style={{ display: "flex", gap: 22, alignItems: "stretch", minWidth: "min-content" }}>
-            {cols.map(([epic, list]) => (
-              <div key={epic} style={{ minWidth: 160 }}>
-                <div style={{ fontSize: 9.5, letterSpacing: .5, color: T.dim, textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>{epic}</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {list.map((it) => {
-                    const c = nodeColor(bucketOf(it.status, it.type));
-                    const sup = (it.origin || originOf(it.key)) === "supplier";
-                    return <a key={it.key} href={it.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", background: T.panel, border: `1px ${sup ? "dashed" : "solid"} ${c}`, borderLeft: `3px solid ${c}`, borderRadius: 7, padding: "7px 8px" }}>
-                      <div style={{ fontSize: 10.5, fontFamily: "ui-monospace,monospace", color: T.greenLink, display: "flex", alignItems: "center", gap: 5 }}>{it.key}{it.type === "Bug" ? " 🐞" : ""}{sup && <span style={{ fontSize: 8, color: T.amber, border: `1px solid ${T.amber}`, borderRadius: 4, padding: "0 3px" }}>KVADOS</span>}</div>
-                      <div style={{ fontSize: 9.5, color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.summary}</div>
-                    </a>;
-                  })}
-                </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {cols.map(([epic, list]) => (
+            <div key={epic} style={{ background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 12px" }}>
+              <div style={{ fontSize: 10, letterSpacing: .5, color: T.dim, textTransform: "uppercase", marginBottom: 8 }}>{epic} <span style={{ color: T.slate }}>· {list.length}</span></div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))", gap: 8 }}>
+                {list.map((it) => {
+                  const c = issueColor(it);
+                  const sup = (it.origin || originOf(it.key)) === "supplier";
+                  const links = [...(it.blockedBy || []).map((k) => ["blockedBy", k]), ...(it.blocks || []).map((k) => ["block", k]), ...(it.relates || []).map((k) => ["relates", k])].filter(([, k]) => has.has(k));
+                  return <a key={it.key} href={it.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", background: T.panel, border: `1px ${sup ? "dashed" : "solid"} ${c}`, borderLeft: `3px solid ${c}`, borderRadius: 7, padding: "7px 9px", display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div style={{ fontSize: 10.5, fontFamily: "ui-monospace,monospace", color: c === T.slate ? T.muted : T.greenLink, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>{it.key}{it.type === "Bug" ? " 🐞" : ""}{sup && <span style={{ fontSize: 8, color: T.muted, border: `1px solid ${T.border}`, borderRadius: 4, padding: "0 3px" }}>KVADOS</span>}</div>
+                    <div style={{ fontSize: 10, color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.summary}</div>
+                    {showLinks && links.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 2 }}>{links.slice(0, 6).map(([d, k]) => linkChip(d, k))}</div>}
+                  </a>;
+                })}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       )}
-      <div style={{ marginTop: 10, fontSize: 10.5, color: T.dim, display: "flex", alignItems: "center", gap: 5 }}><span style={{ fontSize: 8, color: T.amber, border: `1px solid ${T.amber}`, borderRadius: 4, padding: "0 3px" }}>KVADOS</span> = dodávateľ (KVD), prerušovaný rám · plný rám = interné (LOG). Diagram sa generuje z Jira issues, zoskupené podľa Epicu.</div>
+      <div style={{ marginTop: 10, fontSize: 10.5, color: T.dim, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+        <span><span style={{ fontSize: 8, color: T.muted, border: `1px solid ${T.border}`, borderRadius: 4, padding: "0 3px" }}>KVADOS</span> = dodávateľ (prerušovaný rám)</span>·
+        <span style={{ color: T.slate }}>šedý = hotový bug</span>·
+        <span>„väzby" zapne blokuje/blokované medzi story.</span>
+      </div>
     </div>
   );
 }
@@ -921,7 +945,7 @@ function downloadDrawio(project) {
     const x = X0 + gi * COLW;
     push(`<mxCell id="h${gi}" value="${esc(epic)}" style="text;html=1;align=center;fontStyle=1;fillColor=#eceff1;strokeColor=#cfd8dc;rounded=1;" vertex="1" parent="1"><mxGeometry x="${x}" y="20" width="${NW}" height="28" as="geometry"/></mxCell>`);
     list.forEach((it, row) => {
-      const col = nodeColor(bucketOf(it.status, it.type));
+      const col = issueColor(it);
       const y = Y0 + row * (NH + 16);
       push(`<mxCell id="n${it.key}" value="${esc(it.key + " · " + it.summary)}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#161B22;strokeColor=${col};fontColor=#E6EDF3;fontSize=10;align=left;spacingLeft=8;" vertex="1" parent="1"><mxGeometry x="${x}" y="${y}" width="${NW}" height="${NH}" as="geometry"/></mxCell>`);
     });
@@ -968,14 +992,14 @@ function Testovanie({ project, setProject }) {
         </div>
         <Seg label="Fáza" opts={[["all", "Všetky"], ["F0", "F0"], ["F1", "F1"], ["F0/F1", "F0/F1"]]} val={fPhase} set={setFPhase} />
         {cat === "func" && <Seg label="Env" opts={[["all", "Všetky"], ["MOCK", "MOCK"], ["HW", "HW"]]} val={fEnv} set={setFEnv} />}
-        <Seg label="Status" opts={[["all", "Všetky"], ["Done", "Done"], ["IN TESTING", "In testing"], ["TBD", "TBD"]]} val={fStatus} set={setFStatus} />
+        <Seg label="Status" opts={[["all", "Všetky"], ["Done", "Hotové"], ["IN TESTING", "Testuje sa"], ["TBD", "Čaká"]]} val={fStatus} set={setFStatus} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(90px,1fr))", gap: 8, marginBottom: 14 }}>
         <Metric label="Scenáre" value={st.total} />
-        <Metric label="Done" value={st.Done} color={T.green} />
-        <Metric label="In testing" value={st.IT} color={T.amber} />
-        <Metric label="TBD" value={st.TBD} color={T.red} />
+        <Metric label="Hotové" value={st.Done} color={T.green} />
+        <Metric label="Testuje sa" value={st.IT} color={T.amber} />
+        <Metric label="Čaká" value={st.TBD} color={T.slate} />
       </div>
 
       {Object.entries(byProc).map(([proc, list]) => (
@@ -1007,11 +1031,11 @@ function ScenRow({ s, last, open, onToggle, onUpdate, rounds }) {
         {open ? <ChevronDown size={15} color={T.green} /> : <ChevronRight size={15} color={T.muted} />}
         <span style={{ fontSize: 10, color: T.dim, fontFamily: "ui-monospace,monospace", flex: "none" }}>{s.code}</span>
         <span style={{ flex: 1, fontSize: 12, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: open ? 500 : 400 }}>{s.name}</span>
-        {s.priority && <span style={{ fontSize: 9, color: T.muted, border: `1px solid ${T.border}`, borderRadius: 4, padding: "1px 4px", flex: "none" }}>{s.priority}</span>}
+        {s.priority && <span style={{ fontSize: 9, color: s.priority === "CRITICAL" ? T.red : T.muted, border: `1px solid ${T.border}`, borderRadius: 4, padding: "1px 4px", flex: "none" }}>{PRIO_LABEL[s.priority] || s.priority}</span>}
         {s.phase && <span style={{ fontSize: 9.5, color: T.muted, flex: "none" }}>{s.phase}</span>}
         {s.env && <span style={{ fontSize: 9.5, color: T.dim, flex: "none" }}>{s.env}</span>}
         {ev.n > 0 && <span style={{ fontSize: 10.5, color: T.muted, flex: "none" }}>{ev.ok}/{ev.n}</span>}
-        <Pill bg={TS_COLOR[s.status || "TBD"]} fg={"#08160c"}>{s.status || "TBD"}</Pill>
+        <Pill bg={TS_COLOR[s.status || "TBD"]} fg={(s.status||"TBD")==="TBD" ? T.text : "#08160c"}>{TS_LABEL[s.status || "TBD"]}</Pill>
       </div>
       {open && <ScenDetail s={s} onUpdate={onUpdate} rounds={rounds} />}
     </div>
@@ -1027,10 +1051,10 @@ function ScenDetail({ s, onUpdate, rounds }) {
   return (
     <div style={{ padding: "12px 14px 14px", background: T.panel2, borderTop: `1px solid ${T.borderSoft}`, display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <SelField label="Status" val={s.status || "TBD"} opts={TEST_STATUS} onChange={(v) => onUpdate((x) => ({ ...x, status: v }))} color={TS_COLOR[s.status || "TBD"]} />
+        <SelField label="Status" val={s.status || "TBD"} opts={TEST_STATUS} labels={TS_LABEL} onChange={(v) => onUpdate((x) => ({ ...x, status: v }))} color={TS_COLOR[s.status || "TBD"]} />
         <SelField label="Fáza" val={s.phase || "F0"} opts={PHASE_OPTS} onChange={(v) => onUpdate((x) => ({ ...x, phase: v }))} />
         <SelField label="Env" val={s.env || ""} opts={["", ...ENVS]} onChange={(v) => onUpdate((x) => ({ ...x, env: v }))} />
-        <SelField label="Priorita" val={s.priority || ""} opts={["", ...TEST_PRIOS]} onChange={(v) => onUpdate((x) => ({ ...x, priority: v }))} />
+        <SelField label="Priorita" val={s.priority || ""} opts={["", ...TEST_PRIOS]} labels={PRIO_LABEL} onChange={(v) => onUpdate((x) => ({ ...x, priority: v }))} />
       </div>
       {s.preconditions && <div><Lbl>Preconditions</Lbl><div style={ro}>{s.preconditions}</div></div>}
       {s.steps && <div><Lbl>Kroky</Lbl><div style={ro}>{s.steps}</div></div>}
@@ -1083,8 +1107,8 @@ function ScenDetail({ s, onUpdate, rounds }) {
     </div>
   );
 }
-function SelField({ label, val, opts, onChange, color }) {
-  return <div><Lbl>{label}</Lbl><select value={val} onChange={(e) => onChange(e.target.value)} style={{ background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 8px", color: color || T.text, fontSize: 12, appearance: "auto", outline: "none" }}>{opts.map((o) => <option key={o} value={o}>{o || "—"}</option>)}</select></div>;
+function SelField({ label, val, opts, onChange, color, labels }) {
+  return <div><Lbl>{label}</Lbl><select value={val} onChange={(e) => onChange(e.target.value)} style={{ background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 8px", color: color || T.text, fontSize: 12, appearance: "auto", outline: "none" }}>{opts.map((o) => <option key={o} value={o}>{(labels && labels[o]) || o || "—"}</option>)}</select></div>;
 }
 
 function Lbl({ children }) { return <div style={{ fontSize: 10.5, color: T.muted, marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>{children}</div>; }
@@ -1182,7 +1206,7 @@ function OdkazyTab({ project }) {
         {rows.map((r, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderBottom: i === rows.length - 1 ? "none" : `1px solid ${T.borderSoft}` }}>
             <LinkChip link={r.l} />
-            {isJiraLink(r.l) && (r.l.url || "").toUpperCase().includes("KVD-") && <span style={{ fontSize: 8, color: T.amber, border: `1px solid ${T.amber}`, borderRadius: 4, padding: "0 3px", flex: "none" }}>KVADOS</span>}
+            {isJiraLink(r.l) && (r.l.url || "").toUpperCase().includes("KVD-") && <span style={{ fontSize: 8, color: T.amber, border: `1px solid ${T.amber}`, borderRadius: 4, padding: "0 3px", flex: "none", color: T.muted, borderColor: T.border }}>KVADOS</span>}
             <span style={{ fontSize: 11.5, color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {r.s ? `${r.g.name} › ${r.p.name} › ${r.s.name}` : `${CAT_LABEL[r.scen.category] || "test"} › ${r.scen.process} › ${r.scen.name}`}
             </span>
@@ -1217,22 +1241,36 @@ async function readTable(file) {
   return XLSX.utils.sheet_to_json(ws, { defval: "" });
 }
 async function parseJiraFile(file) {
-  const rows = await readTable(file);
-  if (!rows.length) return [];
-  const h = Object.keys(rows[0]);
-  const cK = findCol(h, ["Issue key", "Issue Key", "Key", "Kľúč"]);
-  const cS = findCol(h, ["Summary", "Súhrn", "Názov"]);
-  const cSt = findCol(h, ["Status", "Stav"]);
-  const cA = findCol(h, ["Assignee", "Assignee Name", "Riešiteľ"]);
-  const cT = findCol(h, ["Issue Type", "Type", "Typ"]);
-  const cE = findCol(h, ["Custom field (Epic Link)", "Epic Link", "Epic", "Epika"]);
-  return rows.map((r) => {
-    const key = String(r[cK] || "").trim();
-    if (!key) return null;
-    return { key, summary: String(r[cS] || "").trim(), status: String(r[cSt] || "").trim(),
-      assignee: String(r[cA] || "").split("@")[0].trim(), type: String(r[cT] || "Story").trim(),
-      epic: String(r[cE] || "").trim() || "Bez oblasti", origin: originOf(key), url: JIRA_BASE + key };
-  }).filter(Boolean);
+  const ext = (file.name.split(".").pop() || "").toLowerCase();
+  let aoa;
+  if (ext === "csv") { const Papa = (await import("papaparse")).default; aoa = Papa.parse(await file.text(), { skipEmptyLines: true }).data; }
+  else { const XLSX = await import("xlsx"); const wb = XLSX.read(await file.arrayBuffer(), { type: "array" }); aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: "" }); }
+  if (!aoa.length) return [];
+  const H = (aoa[0] || []).map((x) => String(x || ""));
+  const idx = (pats, avoid) => H.findIndex((h) => { const t = h.toLowerCase(); if (avoid && avoid.some((a) => t.includes(a))) return false; return pats.some((p) => t.includes(p)); });
+  const cK = idx(["issue key", "issue key", "kľúč"]) >= 0 ? idx(["issue key", "kľúč"]) : idx(["key"]);
+  const cS = idx(["summary", "súhrn"], ["epic"]);
+  const cSt = idx(["status", "stav"]);
+  const cA = idx(["assignee", "riešiteľ"]);
+  const cT = idx(["issue type", "typ"], ["link"]);
+  const cE = idx(["epic name", "epic link", "epic", "epika"]);
+  const linkCols = [];
+  H.forEach((h, i) => { const t = h.toLowerCase(); if (!t.includes("link") && !t.includes("blocks") && !t.includes("relates")) return;
+    const kind = t.includes("relat") ? "relates" : t.includes("block") ? "block" : (t.includes("depend") ? "block" : null);
+    if (!kind) return; const dir = t.startsWith("inward") ? "in" : "out"; linkCols.push({ i, kind, dir }); });
+  const V = (r, i) => (i >= 0 ? String(r[i] == null ? "" : r[i]).trim() : "");
+  const out = [];
+  for (let r = 1; r < aoa.length; r++) {
+    const row = aoa[r]; const key = V(row, cK); if (!key) continue;
+    const blocks = [], blockedBy = [], relates = [];
+    linkCols.forEach((lc) => { const v = V(row, lc.i); if (!v || !/^[A-Z][A-Z0-9]+-\d+$/.test(v)) return;
+      if (lc.kind === "relates") { if (!relates.includes(v)) relates.push(v); }
+      else if (lc.dir === "in") { if (!blockedBy.includes(v)) blockedBy.push(v); }
+      else { if (!blocks.includes(v)) blocks.push(v); } });
+    out.push({ key, summary: V(row, cS), status: V(row, cSt), assignee: V(row, cA).split("@")[0],
+      type: V(row, cT) || "Story", epic: V(row, cE) || "Bez oblasti", origin: originOf(key), url: JIRA_BASE + key, blocks, blockedBy, relates });
+  }
+  return out;
 }
 async function parseDocx(file) {
   let mod;

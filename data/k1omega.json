@@ -21,8 +21,11 @@
           "assignee": "Pavel.Vencl",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36790",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36762",
@@ -31,8 +34,13 @@
           "assignee": "zdenek.pekacek",
           "type": "Bug",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36762",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "KVD-74"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-36719",
@@ -41,8 +49,11 @@
           "assignee": "Pavel.Vencl",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36719",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36712",
@@ -51,8 +62,11 @@
           "assignee": "Jonas.Bujok",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36712",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36710",
@@ -61,8 +75,11 @@
           "assignee": "Adriana.Kabatova",
           "type": "Bug",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36710",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36709",
@@ -71,8 +88,11 @@
           "assignee": "Pavel.Vencl",
           "type": "Bug",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36709",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36700",
@@ -81,8 +101,11 @@
           "assignee": "zdenek.pekacek",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36700",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36691",
@@ -91,8 +114,11 @@
           "assignee": "",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36691",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36679",
@@ -101,8 +127,11 @@
           "assignee": "Adriana.Kabatova",
           "type": "Bug",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36679",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36664",
@@ -111,8 +140,11 @@
           "assignee": "Jonas.Bujok",
           "type": "Bug",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36664",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36647",
@@ -121,8 +153,11 @@
           "assignee": "Jakub.Kovac4",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36647",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36623",
@@ -131,8 +166,11 @@
           "assignee": "Pavel.Polesny",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36623",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36622",
@@ -141,8 +179,11 @@
           "assignee": "Jonas.Bujok",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36622",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36621",
@@ -151,8 +192,11 @@
           "assignee": "",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36621",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36609",
@@ -161,8 +205,11 @@
           "assignee": "Pavel.Vencl",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36609",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36583",
@@ -171,8 +218,13 @@
           "assignee": "Miroslav.Baloga",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36583",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": [
+            "LOG-36301"
+          ]
         },
         {
           "key": "LOG-36582",
@@ -181,8 +233,15 @@
           "assignee": "Jonas.Bujok",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36582",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-36679"
+          ],
+          "relates": [
+            "LOG-36301"
+          ]
         },
         {
           "key": "LOG-36581",
@@ -191,8 +250,13 @@
           "assignee": "Jonas.Bujok",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36581",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": [
+            "LOG-36301"
+          ]
         },
         {
           "key": "LOG-36568",
@@ -201,8 +265,11 @@
           "assignee": "Pavel.Vencl",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36568",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36551",
@@ -211,8 +278,11 @@
           "assignee": "zdenek.pekacek",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36551",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36531",
@@ -221,8 +291,13 @@
           "assignee": "Jonas.Bujok",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36531",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-36647"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-36529",
@@ -231,8 +306,11 @@
           "assignee": "Jonas.Bujok",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36529",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36390",
@@ -241,8 +319,11 @@
           "assignee": "",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36390",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36347",
@@ -251,8 +332,11 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36347",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36323",
@@ -261,8 +345,11 @@
           "assignee": "Adriana.Kabatova",
           "type": "Bug",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36323",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36322",
@@ -271,8 +358,11 @@
           "assignee": "Anton.Antonov",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36322",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36308",
@@ -281,8 +371,11 @@
           "assignee": "Adriana.Kabatova",
           "type": "Bug",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36308",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36302",
@@ -291,8 +384,11 @@
           "assignee": "",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36302",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36301",
@@ -301,8 +397,17 @@
           "assignee": "Jakub.Kovac4",
           "type": "Bug",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36301",
-          "origin": "internal"
+          "blocks": [
+            "LOG-30390"
+          ],
+          "blockedBy": [],
+          "relates": [
+            "LOG-36581",
+            "LOG-36582",
+            "LOG-36583"
+          ]
         },
         {
           "key": "LOG-36299",
@@ -311,8 +416,11 @@
           "assignee": "Pavel.Vencl",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36299",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36297",
@@ -321,8 +429,11 @@
           "assignee": "Jakub.Bohm",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36297",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36288",
@@ -331,8 +442,11 @@
           "assignee": "Adriana.Kabatova",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36288",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36242",
@@ -341,8 +455,11 @@
           "assignee": "Pavel.Vencl",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36242",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36241",
@@ -351,8 +468,13 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36241",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": [
+            "LOG-36233"
+          ]
         },
         {
           "key": "LOG-36233",
@@ -361,8 +483,15 @@
           "assignee": "Anton.Antonov",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36233",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-35965"
+          ],
+          "relates": [
+            "LOG-36241"
+          ]
         },
         {
           "key": "LOG-36194",
@@ -371,8 +500,11 @@
           "assignee": "Pavel.Vencl",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36194",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36154",
@@ -381,8 +513,13 @@
           "assignee": "Adriana.Kabatova",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36154",
-          "origin": "internal"
+          "blocks": [
+            "LOG-35957"
+          ],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-36014",
@@ -391,8 +528,13 @@
           "assignee": "marek.jonas",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-36014",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-35315"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-35965",
@@ -401,8 +543,13 @@
           "assignee": "marek.jonas",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35965",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-35315"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-35957",
@@ -411,8 +558,18 @@
           "assignee": "Adriana.Kabatova",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35957",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-33457",
+            "LOG-35770",
+            "LOG-35920",
+            "LOG-36154"
+          ],
+          "relates": [
+            "LOG-33445"
+          ]
         },
         {
           "key": "LOG-35920",
@@ -421,8 +578,11 @@
           "assignee": "Jakub.Kovac4",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35920",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-35917",
@@ -431,8 +591,13 @@
           "assignee": "Jonas.Bujok",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35917",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-33457"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-35907",
@@ -441,8 +606,11 @@
           "assignee": "Adriana.Kabatova",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35907",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-35818",
@@ -451,8 +619,14 @@
           "assignee": "Adriana.Kabatova",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35818",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": [
+            "LOG-33444",
+            "LOG-34782"
+          ]
         },
         {
           "key": "LOG-35792",
@@ -461,8 +635,11 @@
           "assignee": "Zdenek.Vejvoda",
           "type": "Task",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35792",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-35770",
@@ -471,8 +648,17 @@
           "assignee": "Jakub.Kovac4",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35770",
-          "origin": "internal"
+          "blocks": [
+            "LOG-35957"
+          ],
+          "blockedBy": [
+            "LOG-36154"
+          ],
+          "relates": [
+            "LOG-33457"
+          ]
         },
         {
           "key": "LOG-35731",
@@ -481,8 +667,13 @@
           "assignee": "zdenek.pekacek",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35731",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": [
+            "LOG-35158"
+          ]
         },
         {
           "key": "LOG-35692",
@@ -491,8 +682,11 @@
           "assignee": "Jonas.Bujok",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35692",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-35668",
@@ -501,8 +695,13 @@
           "assignee": "Simona.Fratila",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35668",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": [
+            "LOG-35370"
+          ]
         },
         {
           "key": "LOG-35590",
@@ -511,8 +710,11 @@
           "assignee": "Pavel.Vencl",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35590",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-35526",
@@ -521,8 +723,13 @@
           "assignee": "Pavel.Vencl",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35526",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "KVD-56"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-35525",
@@ -531,8 +738,11 @@
           "assignee": "Pavel.Vencl",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35525",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-35519",
@@ -541,8 +751,13 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35519",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-34166"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-35370",
@@ -551,8 +766,14 @@
           "assignee": "Simona.Fratila",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35370",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": [
+            "LOG-33413",
+            "LOG-35668"
+          ]
         },
         {
           "key": "LOG-35364",
@@ -561,8 +782,11 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35364",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-35315",
@@ -571,8 +795,13 @@
           "assignee": "marek.jonas",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35315",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-35173"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-35236",
@@ -581,8 +810,13 @@
           "assignee": "marek.jonas",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35236",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-35173"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-35235",
@@ -591,8 +825,13 @@
           "assignee": "marek.jonas",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35235",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-35173"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-35173",
@@ -601,8 +840,11 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35173",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-35158",
@@ -611,8 +853,15 @@
           "assignee": "Jonas.Bujok",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35158",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-33441"
+          ],
+          "relates": [
+            "LOG-35731"
+          ]
         },
         {
           "key": "LOG-35157",
@@ -621,8 +870,14 @@
           "assignee": "Jonas.Bujok",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35157",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-33441",
+            "LOG-34166"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-35156",
@@ -631,8 +886,13 @@
           "assignee": "Jonas.Bujok",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35156",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-33441"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-35155",
@@ -641,8 +901,13 @@
           "assignee": "Jonas.Bujok",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35155",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-33441"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-35086",
@@ -651,8 +916,11 @@
           "assignee": "Pavel.Vencl",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35086",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-35071",
@@ -661,8 +929,13 @@
           "assignee": "marek.jonas",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35071",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-35173"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-35070",
@@ -671,8 +944,13 @@
           "assignee": "marek.jonas",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35070",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-35173"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-35069",
@@ -681,8 +959,13 @@
           "assignee": "marek.jonas",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35069",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-35173"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-35068",
@@ -691,8 +974,13 @@
           "assignee": "marek.jonas",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35068",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-35173"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-35010",
@@ -701,8 +989,16 @@
           "assignee": "Jonas.Bujok",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-35010",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-33441",
+            "LOG-35173"
+          ],
+          "relates": [
+            "SPD-6266"
+          ]
         },
         {
           "key": "LOG-34782",
@@ -711,8 +1007,15 @@
           "assignee": "Simona.Fratila",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-34782",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": [
+            "LOG-33440",
+            "LOG-34166",
+            "LOG-35818"
+          ]
         },
         {
           "key": "LOG-34778",
@@ -721,8 +1024,11 @@
           "assignee": "Pavel.Vencl",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-34778",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-34777",
@@ -731,8 +1037,11 @@
           "assignee": "Pavel.Vencl",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-34777",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-34456",
@@ -741,8 +1050,14 @@
           "assignee": "marek.jonas",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-34456",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-33441",
+            "LOG-35173"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-34213",
@@ -751,8 +1066,11 @@
           "assignee": "zdenek.pekacek",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-34213",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-34173",
@@ -761,8 +1079,14 @@
           "assignee": "marek.jonas",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-34173",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-33441",
+            "LOG-35173"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-34167",
@@ -771,8 +1095,14 @@
           "assignee": "marek.jonas",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-34167",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-33441",
+            "LOG-35173"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-34166",
@@ -781,8 +1111,19 @@
           "assignee": "Jonas.Bujok",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-34166",
-          "origin": "internal"
+          "blocks": [
+            "LOG-35157"
+          ],
+          "blockedBy": [
+            "LOG-33441"
+          ],
+          "relates": [
+            "LOG-33440",
+            "LOG-33445",
+            "LOG-34782"
+          ]
         },
         {
           "key": "LOG-34165",
@@ -791,8 +1132,14 @@
           "assignee": "marek.jonas",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-34165",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-33441",
+            "LOG-35173"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-33950",
@@ -801,8 +1148,11 @@
           "assignee": "Pavel.Vencl",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33950",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-33459",
@@ -811,8 +1161,11 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33459",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-33458",
@@ -821,8 +1174,11 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33458",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-33457",
@@ -831,8 +1187,13 @@
           "assignee": "Jonas.Bujok",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33457",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": [
+            "LOG-35770"
+          ]
         },
         {
           "key": "LOG-33456",
@@ -841,8 +1202,11 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33456",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-33455",
@@ -851,8 +1215,11 @@
           "assignee": "zdenek.pekacek",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33455",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-33454",
@@ -861,8 +1228,11 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33454",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-33453",
@@ -871,8 +1241,11 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33453",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-33452",
@@ -881,8 +1254,11 @@
           "assignee": "zdenek.pekacek",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33452",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-33451",
@@ -891,8 +1267,11 @@
           "assignee": "zdenek.pekacek",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33451",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-33450",
@@ -901,8 +1280,11 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33450",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-33449",
@@ -911,8 +1293,11 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33449",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-33448",
@@ -921,8 +1306,11 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33448",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-33447",
@@ -931,8 +1319,11 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33447",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-33446",
@@ -941,8 +1332,11 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33446",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-33445",
@@ -951,8 +1345,16 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33445",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-35156"
+          ],
+          "relates": [
+            "LOG-34166",
+            "LOG-35957"
+          ]
         },
         {
           "key": "LOG-33444",
@@ -961,8 +1363,13 @@
           "assignee": "zdenek.pekacek",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33444",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": [
+            "LOG-35818"
+          ]
         },
         {
           "key": "LOG-33443",
@@ -971,8 +1378,13 @@
           "assignee": "zdenek.pekacek",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33443",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [
+            "LOG-33442"
+          ],
+          "relates": []
         },
         {
           "key": "LOG-33442",
@@ -981,8 +1393,13 @@
           "assignee": "zdenek.pekacek",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33442",
-          "origin": "internal"
+          "blocks": [
+            "LOG-33443"
+          ],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-33441",
@@ -991,8 +1408,11 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33441",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "LOG-33440",
@@ -1001,8 +1421,15 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33440",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": [
+            "LOG-33413",
+            "LOG-34166",
+            "LOG-34782"
+          ]
         },
         {
           "key": "LOG-33413",
@@ -1011,8 +1438,14 @@
           "assignee": "Filip.Kois",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-33413",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": [
+            "LOG-33440",
+            "LOG-35370"
+          ]
         },
         {
           "key": "LOG-32820",
@@ -1021,8 +1454,11 @@
           "assignee": "",
           "type": "Story",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/LOG-32820",
-          "origin": "internal"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-77",
@@ -1031,8 +1467,11 @@
           "assignee": "Filip.Kois",
           "type": "Bug",
           "epic": "KVD / dodávateľ",
+          "origin": "supplier",
           "url": "https://jira.alza.cz/browse/KVD-77",
-          "origin": "supplier"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-76",
@@ -1041,8 +1480,11 @@
           "assignee": "Pavel.Ruzicka",
           "type": "Bug",
           "epic": "KVD / dodávateľ",
+          "origin": "supplier",
           "url": "https://jira.alza.cz/browse/KVD-76",
-          "origin": "supplier"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-75",
@@ -1051,8 +1493,11 @@
           "assignee": "Pavel.Ruzicka",
           "type": "Bug",
           "epic": "KVD / dodávateľ",
+          "origin": "supplier",
           "url": "https://jira.alza.cz/browse/KVD-75",
-          "origin": "supplier"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-74",
@@ -1061,8 +1506,11 @@
           "assignee": "Jitka.Kucerova",
           "type": "Bug",
           "epic": "4DS",
+          "origin": "internal",
           "url": "https://jira.alza.cz/browse/KVD-74",
-          "origin": "supplier"
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-47",
@@ -1072,7 +1520,10 @@
           "type": "Task",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-47"
+          "url": "https://jira.alza.cz/browse/KVD-47",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-44",
@@ -1082,7 +1533,10 @@
           "type": "Task",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-44"
+          "url": "https://jira.alza.cz/browse/KVD-44",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-45",
@@ -1092,7 +1546,10 @@
           "type": "Task",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-45"
+          "url": "https://jira.alza.cz/browse/KVD-45",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-19",
@@ -1102,7 +1559,10 @@
           "type": "Task",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-19"
+          "url": "https://jira.alza.cz/browse/KVD-19",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-60",
@@ -1112,7 +1572,10 @@
           "type": "Task",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-60"
+          "url": "https://jira.alza.cz/browse/KVD-60",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-70",
@@ -1122,7 +1585,10 @@
           "type": "Task",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-70"
+          "url": "https://jira.alza.cz/browse/KVD-70",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-59",
@@ -1132,7 +1598,10 @@
           "type": "Task",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-59"
+          "url": "https://jira.alza.cz/browse/KVD-59",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-29",
@@ -1142,7 +1611,10 @@
           "type": "Task",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-29"
+          "url": "https://jira.alza.cz/browse/KVD-29",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-22",
@@ -1152,7 +1624,10 @@
           "type": "Task",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-22"
+          "url": "https://jira.alza.cz/browse/KVD-22",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-72",
@@ -1162,7 +1637,10 @@
           "type": "Story",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-72"
+          "url": "https://jira.alza.cz/browse/KVD-72",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-73",
@@ -1172,7 +1650,10 @@
           "type": "Bug",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-73"
+          "url": "https://jira.alza.cz/browse/KVD-73",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-49",
@@ -1182,7 +1663,10 @@
           "type": "Bug",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-49"
+          "url": "https://jira.alza.cz/browse/KVD-49",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-48",
@@ -1192,7 +1676,10 @@
           "type": "Bug",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-48"
+          "url": "https://jira.alza.cz/browse/KVD-48",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-71",
@@ -1202,7 +1689,10 @@
           "type": "Story",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-71"
+          "url": "https://jira.alza.cz/browse/KVD-71",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-21",
@@ -1212,7 +1702,10 @@
           "type": "Task",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-21"
+          "url": "https://jira.alza.cz/browse/KVD-21",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-63",
@@ -1222,7 +1715,10 @@
           "type": "Task",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-63"
+          "url": "https://jira.alza.cz/browse/KVD-63",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-8",
@@ -1232,7 +1728,10 @@
           "type": "Story",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-8"
+          "url": "https://jira.alza.cz/browse/KVD-8",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         },
         {
           "key": "KVD-6",
@@ -1242,7 +1741,10 @@
           "type": "Task",
           "epic": "KVD / dodávateľ",
           "origin": "supplier",
-          "url": "https://jira.alza.cz/browse/KVD-6"
+          "url": "https://jira.alza.cz/browse/KVD-6",
+          "blocks": [],
+          "blockedBy": [],
+          "relates": []
         }
       ],
       "documents": [
