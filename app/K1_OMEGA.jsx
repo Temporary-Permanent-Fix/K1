@@ -228,6 +228,28 @@ function daysTo(dateStr) {
   if (!dateStr) return null;
   return Math.ceil((new Date(dateStr) - new Date()) / 86400000);
 }
+function checklistStats(pr) {
+  const areas = (pr.checklist && pr.checklist.areas) || [];
+  let scen = 0, pass = 0, part = 0, fail = 0, tot = 0, alza = 0, kvados = 0, aPass = 0, kPass = 0;
+  const roll = { "Hotové": 0, "Prebieha": 0, "Problém": 0, "Čaká": 0 };
+  const byArea = [];
+  areas.forEach((a) => {
+    let ap = 0, at = 0;
+    a.scenarios.forEach((s) => {
+      scen++; roll[clRollup(s)]++;
+      (s.steps || []).forEach((st) => {
+        tot++; at++;
+        const isA = (st.who || "").toUpperCase().includes("ALZA"), isK = (st.who || "").toUpperCase().includes("KVADOS");
+        if (isA) alza++; if (isK) kvados++;
+        if (st.check === "pass") { pass++; ap++; if (isA) aPass++; if (isK) kPass++; }
+        else if (st.check === "partial") part++;
+        else if (st.check === "fail") fail++;
+      });
+    });
+    byArea.push({ name: a.name, done: ap, total: at });
+  });
+  return { scen, pass, part, fail, tot, pct: tot ? Math.round((pass / tot) * 100) : 0, roll, byArea, alza, kvados, aPass, kPass };
+}
 function scenStats(pr) {
   const sc = pr.scenarios || [];
   const st = { total: sc.length, Done: 0, "IN TESTING": 0, TBD: 0 };
@@ -536,7 +558,7 @@ function PhasesCard({ project, setProject }) {
 function Prehlad({ project, setProject }) {
   const today = new Date().toLocaleDateString("sk-SK");
   const dev = devReadiness(project); const isp = issueSplit(project);
-  const ss = scenStats(project); const pw = priorityReadiness(project); const pm = phaseMatrix(project);
+  const cls = checklistStats(project);
   const logBugs = openBugList(project).filter((b) => b.origin === "internal").length;
   const kvdBugs = openBugList(project).filter((b) => b.origin === "supplier").length;
   const lastBugs = openBugList(project);
@@ -570,26 +592,33 @@ function Prehlad({ project, setProject }) {
       </div>
 
       <div style={{ background: T.panel, border: `1px solid ${T.borderSoft}`, borderLeft: `3px solid ${T.slate}`, borderRadius: "0 12px 12px 0", padding: "14px 16px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><ListChecks size={16} color={T.green} /><span style={{ fontSize: 13, fontWeight: 500 }}>TESTY</span><span style={{ fontSize: 11, color: T.muted }}>— {ss.total} test casov (test-based)</span></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}><ListChecks size={16} color={T.green} /><span style={{ fontSize: 13, fontWeight: 500 }}>TESTY</span><span style={{ fontSize: 11, color: T.muted }}>— E2E checklist · {cls.scen} scenárov, {cls.tot} krokov</span></div>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start", marginBottom: 14 }}>
           <div style={{ minWidth: 130 }}>
-            <div style={{ fontSize: 38, fontWeight: 500, color: T.green, lineHeight: 1 }}>{ss.pct}%</div>
-            <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>hotové testy ({ss.Done}/{ss.total})</div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 9, fontSize: 11, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 9px" }}><Target size={13} color={T.amber} />prioritne vážené: <b style={{ color: T.amber }}>{pw}%</b></div>
+            <div style={{ fontSize: 38, fontWeight: 500, color: T.green, lineHeight: 1 }}>{cls.pct}%</div>
+            <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>krokov hotových ({cls.pass}/{cls.tot})</div>
+            <div style={{ display: "flex", gap: 10, marginTop: 9, flexWrap: "wrap", fontSize: 11 }}>
+              <span style={{ background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "4px 8px" }}>ALZA <b>{cls.aPass}/{cls.alza}</b></span>
+              <span style={{ background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "4px 8px" }}>KVADOS <b>{cls.kPass}/{cls.kvados}</b></span>
+            </div>
           </div>
           <div style={{ flex: 1, minWidth: 230, display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ fontSize: 11, color: T.muted }}>Pokrytie podľa kategórie</div>
-            {CATS.map(([c, lbl]) => { const cs = catStats(project, c); const pct = cs.total ? Math.round((cs.done / cs.total) * 100) : 0; return (
-              <div key={c}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, marginBottom: 3 }}><span>{lbl}</span><span style={{ color: T.muted }}>{cs.done} / {cs.total}</span></div><div style={{ height: 6, background: T.borderSoft, borderRadius: 99, overflow: "hidden" }}><div style={{ height: "100%", width: Math.max(pct, 2) + "%", background: pct > 0 ? T.greenDeep : T.slate }} /></div></div>
+            <div style={{ fontSize: 11, color: T.muted }}>Scenáre podľa stavu</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 11.5, color: T.green }}>● Hotové {cls.roll["Hotové"]}</span>
+              <span style={{ fontSize: 11.5, color: T.amber }}>● Prebieha {cls.roll["Prebieha"]}</span>
+              <span style={{ fontSize: 11.5, color: T.red }}>● Problém {cls.roll["Problém"]}</span>
+              <span style={{ fontSize: 11.5, color: T.muted }}>● Čaká {cls.roll["Čaká"]}</span>
+            </div>
+            <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>Pokrytie podľa oblasti (kroky ✓)</div>
+            {cls.byArea.map((a) => { const pct = a.total ? Math.round((a.done / a.total) * 100) : 0; return (
+              <div key={a.name}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, marginBottom: 3 }}><span>{a.name}</span><span style={{ color: T.muted }}>{a.done} / {a.total}</span></div><div style={{ height: 6, background: T.borderSoft, borderRadius: 99, overflow: "hidden" }}><div style={{ height: "100%", width: Math.max(pct, 2) + "%", background: pct > 0 ? T.greenDeep : T.slate }} /></div></div>
             ); })}
           </div>
         </div>
-        <div style={{ fontSize: 11, color: T.muted, marginBottom: 8 }}>Analýza fáz — fáza × prostredie × status</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
-          {Object.keys(pm).sort().flatMap((ph) => ENVS.filter((e) => pm[ph][e]).map((e) => (
-            <PhaseCell key={ph + e} title={`${ph} · ${e}`} count={pm[ph][e].total} m={pm[ph][e]} />
-          )))}
-          {Object.keys(pm).length === 0 && <div style={{ fontSize: 11.5, color: T.dim }}>Žiadne funkčné scenáre.</div>}
+        <div style={{ fontSize: 11, color: T.dim, display: "flex", gap: 14, flexWrap: "wrap" }}>
+          <span>Bezpečnostné: <b style={{ color: T.text }}>{(project.scenarios || []).filter((s) => s.category === "sec").length}</b></span>
+          <span>Výkonnostné: <b style={{ color: T.text }}>{(project.scenarios || []).filter((s) => s.category === "perf").length}</b></span>
         </div>
       </div>
 
@@ -1310,36 +1339,61 @@ function headsToGroups(heads) {
 async function parseTestsFile(file) {
   const XLSX = await import("xlsx");
   const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
-  const catOf = (sheet) => { const s = sheet.toLowerCase(); if (s.includes("bezp")) return "sec"; if (s.includes("výk") || s.includes("vyk")) return "perf"; return "func"; };
   const col = (H, pats, avoid) => H.findIndex((h) => { const t = String(h || "").toLowerCase(); if (avoid && avoid.some((a) => t.includes(a))) return false; return pats.some((p) => t.includes(p)); });
-  const val = (r, i) => (i >= 0 ? String(r[i] == null ? "" : r[i]).trim() : "");
-  const out = [];
+  const val = (r, i) => (i >= 0 && r ? String(r[i] == null ? "" : r[i]).trim() : "");
+  const cst = (v) => { v = String(v || "").trim(); return v === "✓" ? "pass" : v === "✗" ? "fail" : (v === "~" || v === "±") ? "partial" : ""; };
+
+  // meta z "CL Přehled"
+  const meta = {};
+  const over = wb.SheetNames.find((s) => s.toLowerCase().includes("přehled") || s.toLowerCase().includes("prehled"));
+  if (over) {
+    const a = XLSX.utils.sheet_to_json(wb.Sheets[over], { header: 1, defval: "" });
+    const hr = a.findIndex((r) => r.some((c) => String(c).toLowerCase() === "oblast") || r.some((c) => String(c).toLowerCase() === "id"));
+    for (let i = (hr < 0 ? 4 : hr + 1); i < a.length; i++) { const r = a[i]; const id = val(r, 1); if (!id) continue; meta[id] = { name: val(r, 2), k1: val(r, 3), rur: val(r, 4), when: val(r, 5), phase: val(r, 6) || "F0" }; }
+  }
+
+  // CL hárky -> checklist areas
+  const areas = [];
+  wb.SheetNames.filter((s) => /^CL /.test(s) && !/přehled|prehled/i.test(s)).forEach((sheet) => {
+    const aname = sheet.replace(/^CL\s+/, "");
+    const aoa = XLSX.utils.sheet_to_json(wb.Sheets[sheet], { header: 1, defval: "" });
+    if (aoa.length < 2) { areas.push({ id: uid(), name: aname, scenarios: [] }); return; }
+    const H = (aoa[0] || []).map((x) => String(x || ""));
+    const cNote = col(H, ["poznámka", "poznamka"]);
+    const order = [], mp = {};
+    for (let i = 1; i < aoa.length; i++) {
+      const r = aoa[i]; const rid = val(r, 2); if (!rid) continue;
+      const chk = val(r, 0), krok = val(r, 3); const kd = krok.replace(/[–-]/g, "");
+      const isHdr = chk.includes("/") && krok && !/^\d+$/.test(kd);
+      if (!mp[rid]) { const m = meta[rid] || {}; mp[rid] = { id: uid(), code: rid, name: (isHdr ? krok : "") || m.name || "", k1: m.k1 || "", rur: m.rur || "", phase: m.phase || "F0", when: m.when || "", steps: [] }; order.push(rid); }
+      if (isHdr) continue;
+      mp[rid].steps.push({ id: uid(), krok, who: val(r, 4), check: cst(chk), reopened: !!val(r, 1), control: val(r, 5), action: val(r, 6), bug: val(r, 7), blockedBy: val(r, 8), note: cNote >= 0 ? val(r, cNote) : "" });
+    }
+    areas.push({ id: uid(), name: aname, scenarios: order.map((x) => mp[x]) });
+  });
+
+  // sekundárny katalóg: Bezpečnostné / Výkonnostné
+  const tests = [];
   wb.SheetNames.forEach((sheet) => {
-    const cat = catOf(sheet);
+    const s = sheet.toLowerCase(); let cat = null;
+    if (s.includes("bezp")) cat = "sec"; else if (s.includes("výk") || s.includes("vyk")) cat = "perf"; else return;
     const aoa = XLSX.utils.sheet_to_json(wb.Sheets[sheet], { header: 1, defval: "" });
     if (!aoa.length) return;
     let hr = aoa.findIndex((r) => r.some((c) => String(c).toLowerCase().includes("názov")) || r.some((c) => String(c).toLowerCase().trim() === "id"));
     if (hr < 0) hr = 0;
     const H = (aoa[hr] || []).map((x) => String(x || ""));
-    const cID = col(H, ["id"]), cName = col(H, ["názov", "nazov", "scenár", "summary", "name"], ["id"]),
-      cPhase = col(H, ["fáz", "faz"]), cEnv = col(H, ["env"]), cStat = col(H, ["test", "status"], ["názov"]),
+    const cID = col(H, ["id"]), cName = col(H, ["názov", "nazov", "scenár", "name"], ["id"]),
       cPre = col(H, ["precond", "predpoklad"]), cSteps = col(H, ["krok", "steps"]),
-      cExp = col(H, ["očak", "ocak", "expected", "výsledok", "vysledok"]), cSpr = col(H, ["spracuje", "assignee"]), cPrio = col(H, ["priorit"]);
+      cExp = col(H, ["očak", "ocak", "expected", "výsledok", "vysledok"]), cPrio = col(H, ["priorit"]);
     let cur = "—";
     for (let i = hr + 1; i < aoa.length; i++) {
       const r = aoa[i]; const a = val(r, cID >= 0 ? cID : 0); const nm = val(r, cName);
       if (!a && !nm) continue;
       if (a && !/^TC-/i.test(a)) { cur = a; continue; }
-      if (/^TC-/i.test(a)) {
-        const st = val(r, cStat).toUpperCase();
-        out.push({ code: a, name: nm, category: cat, area: cur,
-          phase: val(r, cPhase) || "F0", env: val(r, cEnv),
-          status: st === "DONE" ? "Done" : st === "IN TESTING" ? "IN TESTING" : "TBD",
-          preconditions: val(r, cPre), steps: val(r, cSteps), expected: val(r, cExp), spracuje: val(r, cSpr), priority: val(r, cPrio) });
-      }
+      if (/^TC-/i.test(a)) tests.push({ code: a, name: nm, category: cat, area: cur, phase: "F0", env: "", status: "TBD", preconditions: val(r, cPre), steps: val(r, cSteps), expected: val(r, cExp), spracuje: "", priority: val(r, cPrio) });
     }
   });
-  return out;
+  return { areas, tests };
 }
 
 /* ───────────────────────── import modal ───────────────────────── */
@@ -1363,8 +1417,8 @@ function ImportModal({ project, setProject, onClose }) {
           const { heads, text } = await parseDocx(file);
           setPreview({ kind: "doc", groups: headsToGroups(heads), text, fileName: file.name, fileType: "docx" });
         } else {
-          const tests = await parseTestsFile(file);
-          setPreview({ kind: "tests", tests, fileName: file.name, fileType: ext });
+          const { areas, tests } = await parseTestsFile(file);
+          setPreview({ kind: "tests", areas, tests, fileName: file.name, fileType: ext });
         }
       }
     } catch (ex) { setErr(String(ex.message || ex)); }
@@ -1402,17 +1456,14 @@ function ImportModal({ project, setProject, onClose }) {
     });
     onClose();
   };
-  const [replaceScen, setReplaceScen] = useState(true);
   const applyTests = () => {
     setProject((pr) => {
-      const incoming = preview.tests.map((t) => ({ id: uid(), code: t.code || "", name: t.name, category: t.category || "func", process: t.area || "—",
+      const scenarios = (preview.tests || []).map((t) => ({ id: uid(), code: t.code || "", name: t.name, category: t.category || "sec", process: t.area || "—",
         phase: t.phase || "F0", env: t.env || "", status: t.status || "TBD", priority: t.priority || "",
         preconditions: t.preconditions || "", steps: t.steps || "", expected: t.expected || "", spracuje: t.spracuje || "", links: [], attempts: [] }));
-      let scenarios;
-      if (replaceScen) scenarios = incoming;
-      else { scenarios = [...(pr.scenarios || [])]; const seen = new Set(scenarios.map((s) => (s.code || s.name || "").toLowerCase())); incoming.forEach((s) => { const k = (s.code || s.name || "").toLowerCase(); if (!(k && seen.has(k))) scenarios.push(s); }); }
+      const checklist = (preview.areas && preview.areas.length) ? { areas: preview.areas } : (pr.checklist || { areas: [] });
       const documents = [...(pr.documents || []), { id: uid(), name: preview.fileName, type: preview.fileType, uploadedBy: "", date: new Date().toISOString().slice(0, 10), text: "" }];
-      return { ...pr, scenarios, documents };
+      return { ...pr, scenarios, checklist, documents };
     });
     onClose();
   };
@@ -1478,27 +1529,30 @@ function ImportModal({ project, setProject, onClose }) {
               <Actions onCancel={() => setPreview(null)} onApply={applyDoc} label="Potvrdiť a vytvoriť" />
             </div>
           )}
-          {preview?.kind === "tests" && (
+          {preview?.kind === "tests" && (() => {
+            const areas = preview.areas || [];
+            const clSc = areas.reduce((n, a) => n + a.scenarios.length, 0);
+            const clSt = areas.reduce((n, a) => n + a.scenarios.reduce((m, s) => m + (s.steps || []).length, 0), 0);
+            return (
             <div>
-              <div style={{ fontSize: 12, color: T.muted, margin: "4px 0 8px" }}>Návrh — <b style={{ color: T.text }}>{preview.tests.length}</b> scenárov (Funkčné {preview.tests.filter((t) => t.category === "func").length} · Bezpečnostné {preview.tests.filter((t) => t.category === "sec").length} · Výkonnostné {preview.tests.filter((t) => t.category === "perf").length}).</div>
-              <div style={{ ...box, maxHeight: 240, overflow: "auto" }}>
-                {preview.tests.slice(0, 80).map((t, i) => (
-                  <div key={i} style={{ display: "flex", gap: 8, padding: "6px 10px", borderBottom: `1px solid ${T.borderSoft}`, fontSize: 11.5, alignItems: "center" }}>
-                    <span style={{ fontSize: 9.5, color: T.dim, fontFamily: "ui-monospace,monospace", flex: "none" }}>{t.code}</span>
-                    <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
-                    <span style={{ color: T.dim, flex: "none" }}>{t.area}</span>
-                    <span style={{ fontSize: 9.5, color: T.muted, flex: "none" }}>{t.phase}{t.env ? " · " + t.env : ""}</span>
+              <div style={{ fontSize: 12, color: T.muted, margin: "4px 0 8px" }}>Návrh z <b style={{ color: T.text }}>{preview.fileName}</b>: <b style={{ color: T.text }}>{clSc}</b> E2E scenárov ({clSt} krokov) v {areas.length} oblastiach + Bezpečnostné {preview.tests.filter((t) => t.category === "sec").length} · Výkonnostné {preview.tests.filter((t) => t.category === "perf").length}.</div>
+              <div style={{ ...box, maxHeight: 260, overflow: "auto", padding: 8 }}>
+                {areas.map((a, i) => (
+                  <div key={i} style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 500 }}>{a.name} <span style={{ color: T.dim }}>· {a.scenarios.length} scenárov</span></div>
+                    <div style={{ paddingLeft: 10, display: "flex", flexDirection: "column", gap: 2, marginTop: 2 }}>
+                      {a.scenarios.slice(0, 6).map((s, k) => <div key={k} style={{ fontSize: 10.5, color: T.muted }}><span style={{ fontFamily: "ui-monospace,monospace", color: T.text2 }}>{s.code}</span> {s.name} <span style={{ color: T.dim }}>· {(s.steps || []).length} kr.</span></div>)}
+                      {a.scenarios.length > 6 && <div style={{ fontSize: 10, color: T.dim }}>… a ďalších {a.scenarios.length - 6}</div>}
+                    </div>
                   </div>
                 ))}
-                {preview.tests.length > 80 && <div style={{ padding: 8, fontSize: 11, color: T.dim, textAlign: "center" }}>… a ďalších {preview.tests.length - 80}</div>}
+                {areas.length === 0 && <div style={{ fontSize: 11.5, color: T.dim }}>Nenašla som CL hárky — skontroluj, či je to správny Excel.</div>}
               </div>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, fontSize: 12, color: T.text2, cursor: "pointer" }}>
-                <span onClick={() => setReplaceScen((v) => !v)} style={{ color: replaceScen ? T.green : T.dim, display: "inline-flex" }}>{replaceScen ? <CheckSquare size={17} /> : <Square size={17} />}</span>
-                Nahradiť existujúce scenáre <span style={{ color: T.dim }}>(odporúčané pri importe celého katalógu)</span>
-              </label>
-              <Actions onCancel={() => setPreview(null)} onApply={applyTests} label={replaceScen ? "Nahradiť scenáre" : "Pridať scenáre"} />
+              <div style={{ fontSize: 11, color: T.amber, marginTop: 9, display: "flex", alignItems: "center", gap: 6 }}><AlertTriangle size={14} />Import nahradí celú sekciu Testovanie (checklist aj bezpečnostné/výkonnostné).</div>
+              <Actions onCancel={() => setPreview(null)} onApply={applyTests} label="Nahradiť testy" />
             </div>
-          )}
+            );
+          })()}
         </div>
       </div>
     </div>
@@ -1512,35 +1566,68 @@ function Actions({ onCancel, onApply, label }) {
 }
 
 /* ───────────────────────── Dokument tab (upload + cleanup) ───────────────────────── */
+function docToHtml(text) {
+  const esc = (s) => s.replace(/[&<>]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[m]));
+  const lines = String(text || "").split("\n");
+  const out = []; let para = [];
+  const flush = () => { if (para.length) { out.push(`<p style="margin:0 0 10px;line-height:1.55">${esc(para.join(" "))}</p>`); para = []; } };
+  for (let ln of lines) {
+    const t = ln.trim();
+    const h = t.match(/^(#{1,4})\s+(.*)/);
+    if (h) { flush(); const lv = h[1].length; const sz = [0, 17, 15, 13.5, 12.5][lv]; out.push(`<div style="font-size:${sz}px;font-weight:500;color:#E6EDF3;margin:${lv <= 2 ? 16 : 10}px 0 6px">${esc(h[2])}</div>`); continue; }
+    const b = t.match(/^\*\*(.+?)\*\*$/);
+    if (b) { flush(); out.push(`<div style="font-size:14px;font-weight:500;color:#E6EDF3;margin:14px 0 6px">${esc(b[1])}</div>`); continue; }
+    if (/^[-*]\s+/.test(t)) { flush(); out.push(`<div style="font-size:12.5px;color:#C9D1D9;margin:2px 0 2px 14px">• ${esc(t.replace(/^[-*]\s+/, ""))}</div>`); continue; }
+    if (!t) { flush(); continue; }
+    para.push(t);
+  }
+  flush();
+  return out.join("");
+}
 function DokumentTab({ project, setProject }) {
   const docs = project.documents || [];
   const [sel, setSel] = useState({});
+  const [openDoc, setOpenDoc] = useState(() => (docs.find((d) => (d.text || "").length > 0) || {}).id || null);
   const toggle = (id) => setSel((s) => ({ ...s, [id]: !s[id] }));
   const anySel = Object.values(sel).some(Boolean);
-  const removeSelected = () => {
-    setProject((pr) => ({ ...pr, documents: (pr.documents || []).filter((d) => !sel[d.id]) }));
-    setSel({});
-  };
+  const removeSelected = () => { setProject((pr) => ({ ...pr, documents: (pr.documents || []).filter((d) => !sel[d.id]) })); setSel({}); };
+  const cur = docs.find((d) => d.id === openDoc);
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <div style={{ fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}><FileText size={16} color={T.green} />Dokumenty ({docs.length})</div>
         {anySel && <button onClick={removeSelected} style={{ fontSize: 12, background: "rgba(248,81,73,.12)", border: `1px solid ${T.red}`, color: T.red, borderRadius: 8, padding: "6px 11px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}><Trash2 size={14} />Zmazať vybrané</button>}
       </div>
-      <div style={{ ...card, overflow: "hidden" }}>
-        {docs.map((d, i) => (
-          <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderBottom: i === docs.length - 1 ? "none" : `1px solid ${T.borderSoft}` }}>
-            <span onClick={() => toggle(d.id)} style={{ cursor: "pointer", color: sel[d.id] ? T.green : T.dim }}>{sel[d.id] ? <CheckSquare size={17} /> : <Square size={17} />}</span>
-            <FileText size={15} color={T.muted} />
-            <span style={{ flex: 1, fontSize: 12.5, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
-            <span style={{ fontSize: 10.5, color: T.dim, textTransform: "uppercase" }}>{d.type}</span>
-            <span style={{ fontSize: 10.5, color: T.dim, display: "flex", alignItems: "center", gap: 4 }}><User size={12} />{d.uploadedBy}</span>
-            <span style={{ fontSize: 10.5, color: T.dim }}>{d.date}</span>
-          </div>
-        ))}
-        {docs.length === 0 && <div style={{ padding: 20, color: T.dim, fontSize: 12.5, textAlign: "center" }}>Zatiaľ žiadne dokumenty. Nahraj cez <b style={{ color: T.text }}>Import → Dokument</b>.</div>}
+      <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 12, alignItems: "start" }}>
+        <div style={{ ...card, overflow: "hidden" }}>
+          {docs.map((d, i) => {
+            const on = d.id === openDoc; const hasText = (d.text || "").length > 0;
+            return (
+              <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderBottom: i === docs.length - 1 ? "none" : `1px solid ${T.borderSoft}`, background: on ? "rgba(0,184,74,.08)" : "transparent", cursor: "pointer" }} onClick={() => setOpenDoc(d.id)}>
+                <span onClick={(e) => { e.stopPropagation(); toggle(d.id); }} style={{ cursor: "pointer", color: sel[d.id] ? T.green : T.dim, flex: "none" }}>{sel[d.id] ? <CheckSquare size={16} /> : <Square size={16} />}</span>
+                <FileText size={14} color={hasText ? T.green : T.muted} style={{ flex: "none" }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: on ? T.text : T.text2 }}>{d.name}</div>
+                  <div style={{ fontSize: 9.5, color: T.dim }}>{(d.type || "").toUpperCase()}{d.date ? " · " + d.date : ""}{hasText ? "" : " · bez náhľadu"}</div>
+                </div>
+              </div>
+            );
+          })}
+          {docs.length === 0 && <div style={{ padding: 20, color: T.dim, fontSize: 12.5, textAlign: "center" }}>Žiadne dokumenty. Nahraj cez <b style={{ color: T.text }}>Import → Dokument</b>.</div>}
+        </div>
+        <div style={{ ...card, padding: "14px 16px", minHeight: 300, maxHeight: "72vh", overflow: "auto" }}>
+          {cur && (cur.text || "").length > 0 ? (
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 2 }}>{cur.name}</div>
+              <div style={{ fontSize: 10.5, color: T.dim, marginBottom: 12 }}>{(cur.text || "").length.toLocaleString("sk-SK")} znakov</div>
+              <div style={{ fontSize: 12.5, color: T.text2 }} dangerouslySetInnerHTML={{ __html: docToHtml(cur.text) }} />
+            </div>
+          ) : (
+            <div style={{ color: T.dim, fontSize: 12.5, display: "flex", alignItems: "center", gap: 8, height: 200, justifyContent: "center" }}><FileText size={18} />{cur ? "Tento dokument nemá uložený textový náhľad (napr. .xlsx) — otvor ho v pôvodnej appke." : "Vyber dokument vľavo."}</div>
+          )}
+        </div>
       </div>
-      <div style={{ fontSize: 10.5, color: T.dim, marginTop: 8, display: "flex", alignItems: "center", gap: 5 }}>Zaškrtni dokumenty a „Zmazať vybrané". Maže sa len z tejto sekcie — procesy a issues ostávajú.</div>
+      <div style={{ fontSize: 10.5, color: T.dim, marginTop: 8 }}>Klikni dokument vľavo na náhľad. Zaškrtávacím políčkom a „Zmazať vybrané" ho odstrániš (procesy a issues ostávajú). Chatom vpravo dole sa môžeš pýtať na obsah.</div>
     </div>
   );
 }
@@ -1561,11 +1648,18 @@ async function exportExcel(project) {
     Tr.push([CAT_LABEL[s.category] || s.category, s.process, s.code, s.name, s.phase, s.env, s.status, s.priority,
       s.expected, ev.ok, ev.n, (s.links || []).map((l) => normalizeUrl(l.url)).join("  ")]);
   });
+  const MARK = { pass: "✓", partial: "~", fail: "✗", "": "" };
+  const Cl = [["Oblasť", "ID", "Scenár", "K1", "RUR", "Fáza", "Krok", "Stav", "Kto", "Kontrolný bod", "Akcia", "Bug", "Blocked by", "Dôvod"]];
+  ((project.checklist && project.checklist.areas) || []).forEach((a) => a.scenarios.forEach((s) => {
+    if (!(s.steps || []).length) Cl.push([a.name, s.code, s.name, s.k1, s.rur, s.phase, "", "", "", "", "", "", "", ""]);
+    (s.steps || []).forEach((st) => Cl.push([a.name, s.code, s.name, s.k1, s.rur, s.phase, st.krok, MARK[st.check] + (st.reopened ? " (RO)" : ""), st.who, st.control, st.action, st.bug, st.blockedBy, st.note]));
+  }));
   const Ir = [["Kľúč", "Súhrn", "Status", "Typ", "Assignee", "Epic", "URL"]];
   (project.issues || []).forEach((i) => Ir.push([i.key, i.summary, i.status, i.type, i.assignee, i.epic, i.url]));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(P), "Procesy");
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(Tr), "Testovanie");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(Cl), "Checklist");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(Tr), "Bezp+Výk");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(Ir), "Jira");
   XLSX.writeFile(wb, (project.name || "projekt").replace(/\W+/g, "_") + ".xlsx");
 }
