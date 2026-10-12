@@ -1,7 +1,7 @@
 "use client";
 /*
   K1_OMEGA — multi-project process & test tracker (v2)
-  Dark PREDICTION theme (#0E1117 / green #00b84a), Slovak UI.
+  Dark ALZA-hub theme (#111312 / Alza green #36B323, Inter + JetBrains Mono, blueprint grid), Slovak UI.
 
   ── Deploy (Next.js + Vercel, ako PREDICTION) ─────────────────────────────
   1) Vlož tento súbor ako komponent (napr. app/page.jsx alebo components/K1Omega.jsx).
@@ -28,10 +28,10 @@ import {
 
 /* ───────────────────────── theme ───────────────────────── */
 const T = {
-  bg: "#0E1117", panel: "#161B22", panel2: "#0D1117", border: "#30363D",
-  borderSoft: "#21262D", text: "#E6EDF3", text2: "#C9D1D9", muted: "#8B949E",
-  dim: "#6E7681", green: "#00b84a", greenDeep: "#00963C", greenLink: "#55df36",
-  amber: "#D29922", red: "#F85149", slate: "#3D444D", blue: "#378ADD",
+  bg: "#111312", panel: "#171A17", panel2: "#141814", border: "#2C3A2E",
+  borderSoft: "#1E271F", text: "#EAF2E8", text2: "#C9D6C7", muted: "#79867B",
+  dim: "#5A665C", green: "#36B323", greenDeep: "#2C9A1E", greenLink: "#6FD85C",
+  amber: "#D29922", red: "#F0776F", slate: "#3A463B", blue: "#5BA7E8",
 };
 const STATUS = {
   Done: T.green, Prebieha: T.amber, Blocked: T.red, "Out of scope": T.slate, Nezačaté: T.dim,
@@ -326,7 +326,7 @@ function LinkChip({ link }) {
   const jira = isJiraLink(link) && (!link.label || !link.label.trim());
   return (
     <a href={url} target="_blank" rel="noopener noreferrer"
-      style={{ color: T.greenLink, textDecoration: "none", fontFamily: jira ? "ui-monospace,monospace" : "inherit",
+      style={{ color: T.greenLink, textDecoration: "none", fontFamily: jira ? "'JetBrains Mono',ui-monospace,monospace" : "inherit",
         fontSize: 11.5, display: "inline-flex", alignItems: "center", gap: 4 }}>
       {linkLabel(link)}{!jira && <ExternalLink size={11} />}
     </a>
@@ -364,8 +364,8 @@ export default function K1Omega() {
 
 function Shell({ children }) {
   return (
-    <div style={{ minHeight: "100vh", background: T.bg, color: T.text, padding: 20,
-      fontFamily: "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "transparent", color: T.text, padding: 20,
+      fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" }}>
       <div style={{ maxWidth: 1160, margin: "0 auto" }}>{children}</div>
     </div>
   );
@@ -486,8 +486,8 @@ function ProjectView({ project, setProject, tab, setTab }) {
   if (!project) return <div style={{ padding: 24, color: T.muted }}>Projekt neexistuje.</div>;
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 10px", borderBottom: `1px solid ${T.borderSoft}`, fontSize: 12.5 }}>
-        <div style={{ display: "flex", gap: 2, overflowX: "auto" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, rowGap: 6, flexWrap: "wrap", padding: "0 10px", borderBottom: `1px solid ${T.borderSoft}`, fontSize: 12.5 }}>
+        <div style={{ display: "flex", gap: 2, overflowX: "auto", flex: "1 1 auto", minWidth: 0 }}>
           {TABS.map(([k, lbl]) => (
             <span key={k} onClick={() => setTab(k)} style={{ padding: "10px 12px", whiteSpace: "nowrap", cursor: "pointer", color: tab === k ? T.text : T.muted, fontWeight: tab === k ? 500 : 400, borderBottom: `2px solid ${tab === k ? T.green : "transparent"}` }}>{lbl}</span>
           ))}
@@ -642,7 +642,7 @@ function Prehlad({ project, setProject }) {
           {lastBugs.slice(0, 8).map((b) => (
             <div key={b.key} style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
               <span style={{ width: 7, height: 7, borderRadius: 99, background: T.red, flex: "none" }} />
-              <a href={b.url} target="_blank" rel="noopener noreferrer" style={{ color: T.greenLink, textDecoration: "none", fontFamily: "ui-monospace,monospace", fontSize: 11.5, flex: "none" }}>{b.key}</a>
+              <a href={b.url} target="_blank" rel="noopener noreferrer" style={{ color: T.greenLink, textDecoration: "none", fontFamily: "'JetBrains Mono',ui-monospace,monospace", fontSize: 11.5, flex: "none" }}>{b.key}</a>
               {b.origin === "supplier" && <span style={{ fontSize: 8, color: T.amber, border: `1px solid ${T.amber}`, borderRadius: 4, padding: "0 3px", flex: "none", color: T.muted, borderColor: T.border }}>KVADOS</span>}
               <span style={{ color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.title}</span>
               <span style={{ color: T.dim, fontSize: 10.5, flex: "none" }}>{b.status}</span>
@@ -831,7 +831,7 @@ function FlowDetail({ entry, onUpdate, onDelete, edit, issues = [] }) {
               <div style={{ background: T.panel, border: `1px solid ${st.status === "Blocked" ? "rgba(248,81,73,.35)" : T.borderSoft}`, borderLeft: `3px solid ${STATUS[st.status] || T.slate}`, borderRadius: 8, padding: "10px 12px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                    <span style={{ fontSize: 9.5, color: T.muted, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 5, padding: "2px 6px", fontFamily: "ui-monospace,monospace" }}>{st.type === "manual" ? "MAN" : "SYS"}</span>
+                    <span style={{ fontSize: 9.5, color: T.muted, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 5, padding: "2px 6px", fontFamily: "'JetBrains Mono',ui-monospace,monospace" }}>{st.type === "manual" ? "MAN" : "SYS"}</span>
                     <span style={{ fontSize: 12.5, color: st.status === "Nezačaté" ? T.muted : T.text }}>{st.name}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -857,7 +857,7 @@ function StepEditor({ st, inp, nb, issues, onSet, onDel, onMove, onAddLink, onDe
   return (
     <div style={{ background: T.panel, border: `1px solid ${T.borderSoft}`, borderLeft: `3px solid ${STATUS[st.status] || T.slate}`, borderRadius: 8, padding: "10px 12px", marginBottom: 8 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-        <span onClick={() => onSet({ type: st.type === "manual" ? "system" : "manual" })} title="Prepnúť SYS/MAN" style={{ fontSize: 9.5, color: T.green, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 5, padding: "3px 7px", fontFamily: "ui-monospace,monospace", cursor: "pointer" }}>{st.type === "manual" ? "MAN" : "SYS"}</span>
+        <span onClick={() => onSet({ type: st.type === "manual" ? "system" : "manual" })} title="Prepnúť SYS/MAN" style={{ fontSize: 9.5, color: T.green, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 5, padding: "3px 7px", fontFamily: "'JetBrains Mono',ui-monospace,monospace", cursor: "pointer" }}>{st.type === "manual" ? "MAN" : "SYS"}</span>
         <input value={st.name} onChange={(e) => onSet({ name: e.target.value })} style={{ ...inp, flex: 1, minWidth: 140 }} />
         <select value={st.status} onChange={(e) => onSet({ status: e.target.value })} style={{ ...inp, appearance: "auto" }}>{STATUS_OPTS.map((s) => <option key={s}>{s}</option>)}</select>
         <button onClick={() => onMove(-1)} disabled={first} style={{ ...nb, opacity: first ? .3 : 1 }} title="Hore"><ChevronDown size={15} style={{ transform: "rotate(180deg)" }} /></button>
@@ -925,7 +925,7 @@ function DiagramView({ project }) {
   }, [issues]);
   const linkChip = (dir, key) => (
     <a key={dir + key} href={JIRA_BASE + key} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-      style={{ fontSize: 9, fontFamily: "ui-monospace,monospace", textDecoration: "none", color: T.muted, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 4, padding: "0 4px", display: "inline-flex", alignItems: "center", gap: 2 }}>
+      style={{ fontSize: 9, fontFamily: "'JetBrains Mono',ui-monospace,monospace", textDecoration: "none", color: T.muted, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 4, padding: "0 4px", display: "inline-flex", alignItems: "center", gap: 2 }}>
       {dir === "block" ? "blokuje →" : dir === "blockedBy" ? "← blokuje ho" : "~"} {key}
     </a>
   );
@@ -957,7 +957,7 @@ function DiagramView({ project }) {
                   const sup = (it.origin || originOf(it.key)) === "supplier";
                   const links = [...(it.blockedBy || []).map((k) => ["blockedBy", k]), ...(it.blocks || []).map((k) => ["block", k]), ...(it.relates || []).map((k) => ["relates", k])].filter(([, k]) => has.has(k));
                   return <a key={it.key} href={it.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", background: T.panel, border: `1px ${sup ? "dashed" : "solid"} ${c}`, borderLeft: `3px solid ${c}`, borderRadius: 7, padding: "7px 9px", display: "flex", flexDirection: "column", gap: 4 }}>
-                    <div style={{ fontSize: 10.5, fontFamily: "ui-monospace,monospace", color: c === T.slate ? T.muted : T.greenLink, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>{it.key}{it.type === "Bug" ? " 🐞" : ""}{sup && <span style={{ fontSize: 8, color: T.muted, border: `1px solid ${T.border}`, borderRadius: 4, padding: "0 3px" }}>KVADOS</span>}</div>
+                    <div style={{ fontSize: 10.5, fontFamily: "'JetBrains Mono',ui-monospace,monospace", color: c === T.slate ? T.muted : T.greenLink, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>{it.key}{it.type === "Bug" ? " 🐞" : ""}{sup && <span style={{ fontSize: 8, color: T.muted, border: `1px solid ${T.border}`, borderRadius: 4, padding: "0 3px" }}>KVADOS</span>}</div>
                     <div style={{ fontSize: 10, color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.summary}</div>
                     {showLinks && links.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 2 }}>{links.slice(0, 6).map(([d, k]) => linkChip(d, k))}</div>}
                   </a>;
@@ -1073,8 +1073,8 @@ function Checklist({ cl, setProject, areaIdx, setAreaIdx, who, setWho, res, setR
         <Metric label="Kroky ✗" value={cf} color={T.red} />
         <Metric label="Hotovo" value={pct + "%"} color={T.green} />
       </div>
-      <div style={{ border: `1px solid ${T.borderSoft}`, borderRadius: 10, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "70px 1fr 70px 60px 60px 100px", gap: 8, padding: "7px 12px", background: T.panel2, borderBottom: `1px solid ${T.borderSoft}`, fontSize: 10, color: T.dim, textTransform: "uppercase" }}>
+      <div style={{ border: `1px solid ${T.borderSoft}`, borderRadius: 10, overflow: "hidden", overflowX: "auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "70px minmax(220px,1fr) 70px 64px 64px 100px", gap: 8, padding: "7px 12px", background: T.panel2, borderBottom: `1px solid ${T.borderSoft}`, fontSize: 10, color: T.dim, textTransform: "uppercase", minWidth: 720 }}>
           <span>ID</span><span>Scenár</span><span>Postup</span><span>K1</span><span>RUR</span><span>Stav</span>
         </div>
         {scen.map((s, i) => <ClScenario key={s.id} s={s} last={i === scen.length - 1} open={open === s.id} onToggle={() => setOpen(open === s.id ? null : s.id)} onUpdate={(fn) => setScen(s.id, fn)} onDelete={() => setArea((a) => ({ ...a, scenarios: a.scenarios.filter((x) => x.id !== s.id) }))} whoMatch={whoMatch} />)}
@@ -1096,8 +1096,8 @@ function ClScenario({ s, last, open, onToggle, onUpdate, onDelete, whoMatch }) {
   const addStep = () => onUpdate((x) => ({ ...x, steps: [...(x.steps || []), { id: uid(), krok: String((x.steps || []).length + 1), who: "ALZA", check: "", reopened: false, control: "", action: "", bug: "", blockedBy: "", note: "" }] }));
   return (
     <div style={{ borderBottom: last && !open ? "none" : `1px solid ${T.borderSoft}` }}>
-      <div onClick={onToggle} style={{ display: "grid", gridTemplateColumns: "70px 1fr 70px 60px 60px 100px", gap: 8, padding: "9px 12px", alignItems: "center", cursor: "pointer", background: open ? T.panel : "transparent" }}>
-        <span style={{ fontSize: 11, fontFamily: "ui-monospace,monospace", color: T.text, display: "flex", alignItems: "center", gap: 4 }}>{open ? <ChevronDown size={14} color={T.green} /> : <ChevronRight size={14} color={T.muted} />}{s.code}</span>
+      <div onClick={onToggle} style={{ display: "grid", gridTemplateColumns: "70px minmax(220px,1fr) 70px 64px 64px 100px", gap: 8, padding: "9px 12px", alignItems: "center", cursor: "pointer", background: open ? T.panel : "transparent", minWidth: 720 }}>
+        <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono',ui-monospace,monospace", color: T.text, display: "flex", alignItems: "center", gap: 4 }}>{open ? <ChevronDown size={14} color={T.green} /> : <ChevronRight size={14} color={T.muted} />}{s.code}</span>
         <span style={{ fontSize: 12, fontWeight: open ? 500 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
         <span style={{ fontSize: 11, color: T.muted }}>{done}/{steps.length}</span>
         <span onClick={stop}><select value={s.k1 || ""} onChange={(e) => onUpdate((x) => ({ ...x, k1: e.target.value }))} style={{ ...sel, color: RES_COLOR[s.k1] || T.muted }}>{RES_OPTS.map((o) => <option key={o} value={o}>{o || "—"}</option>)}</select></span>
@@ -1113,7 +1113,7 @@ function ClScenario({ s, last, open, onToggle, onUpdate, onDelete, whoMatch }) {
             <input value={s.when || ""} onChange={(e) => onUpdate((x) => ({ ...x, when: e.target.value }))} placeholder="termín…" style={{ ...sel, fontSize: 11.5, width: 140 }} />
             <span onClick={onDelete} style={{ marginLeft: "auto", fontSize: 11, color: T.red, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}><Trash2 size={12} />scenár</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "42px 118px 96px 1fr 150px 30px", gap: 8, padding: "4px 6px", fontSize: 9.5, color: T.dim, textTransform: "uppercase" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "42px 118px 96px minmax(180px,1fr) 150px 30px", gap: 8, minWidth: 560, padding: "4px 6px", fontSize: 9.5, color: T.dim, textTransform: "uppercase" }}>
             <span>Krok</span><span>Stav</span><span>Kto</span><span>Kontrolný bod / akcia</span><span>Bug · dôvod</span><span></span>
           </div>
           {steps.map((st) => <ClStep key={st.id} st={st} dim={!whoMatch(st)} onUpdate={(fn) => onUpdate((x) => ({ ...x, steps: x.steps.map((y) => (y.id === st.id ? fn(y) : y)) }))} onDel={() => onUpdate((x) => ({ ...x, steps: x.steps.filter((y) => y.id !== st.id) }))} />)}
@@ -1127,8 +1127,8 @@ function ClStep({ st, dim, onUpdate, onDel }) {
   const inp = { background: T.panel, border: `1px solid ${T.border}`, borderRadius: 6, padding: "4px 6px", color: T.text2, fontSize: 11, outline: "none", width: "100%", boxSizing: "border-box" };
   const states = [["pass", "✓", T.green, "#0d3b1e"], ["partial", "~", T.amber, "#412402"], ["fail", "✗", T.red, "#501313"]];
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "42px 118px 96px 1fr 150px 30px", gap: 8, padding: "6px 6px", alignItems: "center", borderTop: `1px solid ${T.panel}`, opacity: dim ? .4 : 1 }}>
-      <input value={st.krok || ""} onChange={(e) => onUpdate((x) => ({ ...x, krok: e.target.value }))} style={{ ...inp, fontFamily: "ui-monospace,monospace", textAlign: "center" }} />
+    <div style={{ display: "grid", gridTemplateColumns: "42px 118px 96px minmax(180px,1fr) 150px 30px", gap: 8, minWidth: 560, padding: "6px 6px", alignItems: "center", borderTop: `1px solid ${T.panel}`, opacity: dim ? .4 : 1 }}>
+      <input value={st.krok || ""} onChange={(e) => onUpdate((x) => ({ ...x, krok: e.target.value }))} style={{ ...inp, fontFamily: "'JetBrains Mono',ui-monospace,monospace", textAlign: "center" }} />
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         <span style={{ display: "inline-flex", border: `1px solid ${T.border}`, borderRadius: 6, overflow: "hidden" }}>
           {states.map(([v, lbl, bg, fg]) => { const on = st.check === v; return <span key={v} onClick={() => onUpdate((x) => ({ ...x, check: on ? "" : v }))} style={{ padding: "3px 7px", fontSize: 11, cursor: "pointer", background: on ? bg : T.panel, color: on ? fg : T.dim, fontWeight: on ? 600 : 400 }}>{lbl}</span>; })}
@@ -1198,7 +1198,7 @@ function ScenRow({ s, last, open, onToggle, onUpdate, rounds }) {
     <div style={{ borderBottom: last && !open ? "none" : `1px solid ${T.borderSoft}` }}>
       <div onClick={onToggle} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", cursor: "pointer", background: open ? T.panel : "transparent" }}>
         {open ? <ChevronDown size={15} color={T.green} /> : <ChevronRight size={15} color={T.muted} />}
-        <span style={{ fontSize: 10, color: T.dim, fontFamily: "ui-monospace,monospace", flex: "none" }}>{s.code}</span>
+        <span style={{ fontSize: 10, color: T.dim, fontFamily: "'JetBrains Mono',ui-monospace,monospace", flex: "none" }}>{s.code}</span>
         <span style={{ flex: 1, fontSize: 12, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: open ? 500 : 400 }}>{s.name}</span>
         {s.priority && <span style={{ fontSize: 9, color: s.priority === "CRITICAL" ? T.red : T.muted, border: `1px solid ${T.border}`, borderRadius: 4, padding: "1px 4px", flex: "none" }}>{PRIO_LABEL[s.priority] || s.priority}</span>}
         {s.phase && <span style={{ fontSize: 9.5, color: T.muted, flex: "none" }}>{s.phase}</span>}
@@ -1240,7 +1240,7 @@ function ScenDetail({ s, onUpdate, rounds }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {(s.attempts || []).map((a, i) => (
             <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, background: T.panel, border: `1px solid ${a.ok ? T.border : "rgba(248,81,73,.3)"}`, borderRadius: 8, padding: "6px 9px" }}>
-              <span style={{ fontSize: 10, color: T.muted, fontFamily: "ui-monospace,monospace", width: 16, textAlign: "center" }}>{i + 1}</span>
+              <span style={{ fontSize: 10, color: T.muted, fontFamily: "'JetBrains Mono',ui-monospace,monospace", width: 16, textAlign: "center" }}>{i + 1}</span>
               {a.round && <span style={{ fontSize: 9, color: T.dim, border: `1px solid ${T.border}`, borderRadius: 4, padding: "1px 4px" }}>{a.round}</span>}
               <input value={a.text} placeholder="čo sa stalo…" onChange={(e) => onUpdate((x) => ({ ...x, attempts: x.attempts.map((y) => (y.id === a.id ? { ...y, text: e.target.value } : y)) }))} style={{ flex: 1, background: "transparent", border: "none", color: T.text2, fontSize: 12, outline: "none", minWidth: 0 }} />
               <input value={a.by || ""} placeholder="ini" title="Iniciály testera" maxLength={5} onChange={(e) => onUpdate((x) => ({ ...x, attempts: x.attempts.map((y) => (y.id === a.id ? { ...y, by: e.target.value } : y)) }))} style={{ width: 42, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 6, padding: "2px 5px", color: T.text, fontSize: 11, outline: "none", textAlign: "center", flex: "none" }} />
@@ -1639,7 +1639,7 @@ function ImportModal({ project, setProject, onClose }) {
               <div style={{ ...box, maxHeight: 260, overflow: "auto" }}>
                 {preview.issues.slice(0, 60).map((it) => (
                   <div key={it.key} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderBottom: `1px solid ${T.borderSoft}`, fontSize: 11.5 }}>
-                    <span style={{ fontFamily: "ui-monospace,monospace", color: T.greenLink, flex: "none" }}>{it.key}</span>
+                    <span style={{ fontFamily: "'JetBrains Mono',ui-monospace,monospace", color: T.greenLink, flex: "none" }}>{it.key}</span>
                     <span style={{ flex: 1, color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.summary}</span>
                     <span style={{ color: T.dim, flex: "none" }}>{it.status}</span>
                   </div>
@@ -1681,7 +1681,7 @@ function ImportModal({ project, setProject, onClose }) {
                   <div key={i} style={{ marginBottom: 8 }}>
                     <div style={{ fontSize: 12, fontWeight: 500 }}>{a.name} <span style={{ color: T.dim }}>· {a.scenarios.length} scenárov</span></div>
                     <div style={{ paddingLeft: 10, display: "flex", flexDirection: "column", gap: 2, marginTop: 2 }}>
-                      {a.scenarios.slice(0, 6).map((s, k) => <div key={k} style={{ fontSize: 10.5, color: T.muted }}><span style={{ fontFamily: "ui-monospace,monospace", color: T.text2 }}>{s.code}</span> {s.name} <span style={{ color: T.dim }}>· {(s.steps || []).length} kr.</span></div>)}
+                      {a.scenarios.slice(0, 6).map((s, k) => <div key={k} style={{ fontSize: 10.5, color: T.muted }}><span style={{ fontFamily: "'JetBrains Mono',ui-monospace,monospace", color: T.text2 }}>{s.code}</span> {s.name} <span style={{ color: T.dim }}>· {(s.steps || []).length} kr.</span></div>)}
                       {a.scenarios.length > 6 && <div style={{ fontSize: 10, color: T.dim }}>… a ďalších {a.scenarios.length - 6}</div>}
                     </div>
                   </div>
