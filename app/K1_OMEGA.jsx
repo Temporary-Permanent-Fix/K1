@@ -17,6 +17,7 @@
   alebo názov aplikácie. Do diagramu sa premietajú len Jira issues.
 */
 import { useState, useEffect, useMemo, useCallback } from "react";
+import SEED_DATA from "../data/k1omega.json";
 import {
   Folders, Plus, Search, RefreshCw, ChevronRight, ChevronDown, Flag, Bug,
   CircleCheck, CircleDashed, PlayCircle, ListChecks, User, Calendar, Target,
@@ -180,14 +181,18 @@ function seedState() {
 }
 
 /* ───────────────────────── storage ───────────────────────── */
-const LS_KEY = "k1omega:v2";
+const LS_KEY = "k1omega:v3";
+function bundledSeed() {
+  try { if (SEED_DATA && SEED_DATA.projects && SEED_DATA.projects.length) return JSON.parse(JSON.stringify(SEED_DATA)); } catch {}
+  return seedState();
+}
 async function loadState() {
   try {
     const r = await fetch("/api/state", { cache: "no-store" });
-    if (r.ok) { const j = await r.json(); if (j && j.projects) return j; }
+    if (r.ok) { const j = await r.json(); if (j && j.projects && j.projects.length) return j; }
   } catch { /* fallback below */ }
-  try { const s = localStorage.getItem(LS_KEY); if (s) return JSON.parse(s); } catch {}
-  return seedState();
+  try { const s = localStorage.getItem(LS_KEY); if (s) { const j = JSON.parse(s); if (j && j.projects && j.projects.length) return j; } } catch {}
+  return bundledSeed();
 }
 async function saveState(state) {
   try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch {}
@@ -408,11 +413,18 @@ function Portfolio({ state, persist, onOpen }) {
     if (typeof window !== "undefined" && !window.confirm(`Zmazať projekt „${cur ? cur.name : ""}"? Táto akcia je nevratná.`)) return;
     persist({ ...state, projects: projects.filter((p) => p.id !== id) });
   };
+  const reseed = () => {
+    if (typeof window !== "undefined" && !window.confirm("Načítať aktuálne dáta zo vzoru? Prepíše sa súčasný stav (checklist, procesy, dokumenty…).")) return;
+    persist(bundledSeed());
+  };
   return (
     <div style={{ padding: "12px 16px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5 }}><Folders size={15} color={T.green} /><span style={{ fontWeight: 500 }}>Projekty</span></div>
-        <button onClick={addProject} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, background: T.green, color: T.bg, border: "none", borderRadius: 8, padding: "6px 11px", fontWeight: 500, cursor: "pointer" }}><Plus size={15} />Nový projekt</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={reseed} title="Načíta aktuálne dáta zo vzoru v appke (prepíše stav)" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, background: T.panel, color: T.text, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 11px", cursor: "pointer" }}><RefreshCw size={14} color={T.green} />Obnoviť dáta zo vzoru</button>
+          <button onClick={addProject} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, background: T.green, color: T.bg, border: "none", borderRadius: 8, padding: "6px 11px", fontWeight: 500, cursor: "pointer" }}><Plus size={15} />Nový projekt</button>
+        </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 10, marginBottom: 14 }}>
         <Metric label="Projekty" value={projects.length} />
@@ -988,49 +1000,177 @@ function downloadDrawio(project) {
 
 /* ── Testovanie (cykly + testy + pokusy) ── */
 /* ── Testovanie (scenáre podľa kategórie + procesu, F0/F1, MOCK/HW) ── */
+function clRollup(s){
+  const steps=(s.steps||[]).filter(x=>x.check);
+  if(!(s.steps||[]).length) return "Čaká";
+  if((s.steps||[]).some(x=>x.check==="fail")) return "Problém";
+  if((s.steps||[]).every(x=>x.check==="pass")) return "Hotové";
+  if(steps.length) return "Prebieha";
+  return "Čaká";
+}
+const ROLL_COLOR={ "Hotové":T.green, "Prebieha":T.amber, "Problém":T.red, "Čaká":T.slate };
+const RES_OPTS=["","OK","NOT OK","N/A"];
+const RES_COLOR={ "OK":T.green, "NOT OK":T.red, "N/A":T.slate, "":T.slate };
+const WHO_OPTS=["","ALZA","KVADOS","ALZA + KVADOS","—"];
 function Testovanie({ project, setProject }) {
-  const [cat, setCat] = useState("func");
-  const [fPhase, setFPhase] = useState("all");
-  const [fEnv, setFEnv] = useState("all");
-  const [fStatus, setFStatus] = useState("all");
+  const [layer, setLayer] = useState("cl");
+  const cl = project.checklist || { areas: [] };
+  const [areaIdx, setAreaIdx] = useState(0);
+  const [who, setWho] = useState("all");
+  const [res, setRes] = useState("all");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(null);
+  const [fStatus, setFStatus] = useState("all");
   const setScen = (id, fn) => setProject((pr) => ({ ...pr, scenarios: (pr.scenarios || []).map((s) => (s.id === id ? fn(s) : s)) }));
   const rounds = project.rounds || ["Kolo 1"];
-
-  const all = (project.scenarios || []).filter((s) => s.category === cat);
-  const ql = q.trim().toLowerCase();
-  const scen = all.filter((s) =>
-    (fPhase === "all" || (s.phase || "F0") === fPhase) &&
-    (fEnv === "all" || (s.env || "") === fEnv) &&
-    (fStatus === "all" || (s.status || "TBD") === fStatus) &&
-    (!ql || (s.name || "").toLowerCase().includes(ql) || (s.code || "").toLowerCase().includes(ql) || (s.process || "").toLowerCase().includes(ql)));
-  const byProc = {}; scen.forEach((s) => { (byProc[s.process || "—"] ||= []).push(s); });
-  const st = { total: scen.length, Done: scen.filter((s) => s.status === "Done").length, IT: scen.filter((s) => s.status === "IN TESTING").length, TBD: scen.filter((s) => (s.status || "TBD") === "TBD").length };
-  const chip = (on) => ({ fontSize: 12, padding: "5px 11px", borderRadius: 7, cursor: "pointer", background: on ? T.green : "transparent", color: on ? T.bg : T.muted, fontWeight: on ? 500 : 400 });
-
+  const secN = (project.scenarios || []).filter((s) => s.category === "sec").length;
+  const perfN = (project.scenarios || []).filter((s) => s.category === "perf").length;
+  const clN = (cl.areas || []).reduce((n, a) => n + a.scenarios.length, 0);
+  const chip = (on) => ({ fontSize: 12, padding: "6px 12px", borderRadius: 7, cursor: "pointer", background: on ? T.green : "transparent", color: on ? T.bg : T.muted, fontWeight: on ? 500 : 400 });
   return (
     <div>
       <div style={{ display: "inline-flex", background: T.panel, border: `1px solid ${T.border}`, borderRadius: 9, padding: 3, gap: 3, marginBottom: 12 }}>
-        {CATS.map(([k, lbl]) => <span key={k} onClick={() => { setCat(k); setOpen(null); }} style={chip(cat === k)}>{lbl} <span style={{ opacity: .7 }}>{(project.scenarios || []).filter((s) => s.category === k).length}</span></span>)}
+        <span onClick={() => { setLayer("cl"); setOpen(null); }} style={chip(layer === "cl")}>Checklist E2E <span style={{ opacity: .7 }}>{clN}</span></span>
+        <span onClick={() => { setLayer("sec"); setOpen(null); }} style={chip(layer === "sec")}>Bezpečnostné <span style={{ opacity: .7 }}>{secN}</span></span>
+        <span onClick={() => { setLayer("perf"); setOpen(null); }} style={chip(layer === "perf")}>Výkonnostné <span style={{ opacity: .7 }}>{perfN}</span></span>
       </div>
-
+      {layer === "cl" ? <Checklist cl={cl} setProject={setProject} areaIdx={areaIdx} setAreaIdx={setAreaIdx} who={who} setWho={setWho} res={res} setRes={setRes} q={q} setQ={setQ} open={open} setOpen={setOpen} />
+        : <ScenarioCatalog project={project} cat={layer} fStatus={fStatus} setFStatus={setFStatus} q={q} setQ={setQ} open={open} setOpen={setOpen} setScen={setScen} rounds={rounds} />}
+    </div>
+  );
+}
+function Checklist({ cl, setProject, areaIdx, setAreaIdx, who, setWho, res, setRes, q, setQ, open, setOpen }) {
+  const areas = cl.areas || [];
+  const area = areas[areaIdx] || { scenarios: [] };
+  const setArea = (fn) => setProject((pr) => { const c = pr.checklist || { areas: [] }; const a2 = c.areas.map((a, i) => (i === areaIdx ? fn(a) : a)); return { ...pr, checklist: { ...c, areas: a2 } }; });
+  const setScen = (sid, fn) => setArea((a) => ({ ...a, scenarios: a.scenarios.map((s) => (s.id === sid ? fn(s) : s)) }));
+  const whoMatch = (st) => who === "all" || (who === "ALZA" && (st.who || "").toUpperCase().includes("ALZA")) || (who === "KVADOS" && (st.who || "").toUpperCase().includes("KVADOS"));
+  const ql = q.trim().toLowerCase();
+  let scen = area.scenarios;
+  if (ql) scen = scen.filter((s) => (s.code || "").toLowerCase().includes(ql) || (s.name || "").toLowerCase().includes(ql));
+  if (res !== "all") scen = scen.filter((s) => clRollup(s) === res);
+  let cp = 0, cpart = 0, cf = 0, ctot = 0;
+  area.scenarios.forEach((s) => (s.steps || []).forEach((st) => { if (!whoMatch(st)) return; ctot++; if (st.check === "pass") cp++; else if (st.check === "partial") cpart++; else if (st.check === "fail") cf++; }));
+  const pct = ctot ? Math.round((cp / ctot) * 100) : 0;
+  const addScen = () => setArea((a) => ({ ...a, scenarios: [...a.scenarios, { id: uid(), code: "NEW-" + (a.scenarios.length + 1), name: "Nový scenár", k1: "", rur: "", phase: "F0", when: "", steps: [] }] }));
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+        {areas.map((a, i) => <span key={a.id} onClick={() => { setAreaIdx(i); setOpen(null); }} style={{ fontSize: 12, background: i === areaIdx ? "rgba(0,184,74,.1)" : T.panel, border: `1px solid ${i === areaIdx ? T.green : T.border}`, borderRadius: 8, padding: "5px 10px", color: i === areaIdx ? T.text : T.muted, cursor: "pointer" }}>{a.name} <span style={{ opacity: .7 }}>{a.scenarios.length}</span></span>)}
+        {areas.length === 0 && <span style={{ fontSize: 12, color: T.dim }}>Žiadny checklist — použi Import → Dokument (FINAL xlsx) alebo Obnoviť dáta zo vzoru.</span>}
+      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "5px 8px", flex: 1, minWidth: 150 }}>
           <Search size={13} color={T.muted} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="hľadať scenár…" style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none", color: T.text, fontSize: 12 }} />
         </div>
-        <Seg label="Fáza" opts={[["all", "Všetky"], ["F0", "F0"], ["F1", "F1"], ["F0/F1", "F0/F1"]]} val={fPhase} set={setFPhase} />
-        {cat === "func" && <Seg label="Env" opts={[["all", "Všetky"], ["MOCK", "MOCK"], ["HW", "HW"]]} val={fEnv} set={setFEnv} />}
-        <Seg label="Status" opts={[["all", "Všetky"], ["Done", "Hotové"], ["IN TESTING", "Testuje sa"], ["TBD", "Čaká"]]} val={fStatus} set={setFStatus} />
+        <Seg label="Kto" opts={[["all", "Všetko"], ["ALZA", "ALZA"], ["KVADOS", "KVADOS"]]} val={who} set={setWho} />
+        <Seg label="Stav" opts={[["all", "Všetky"], ["Hotové", "Hotové"], ["Prebieha", "Prebieha"], ["Problém", "Problém"], ["Čaká", "Čaká"]]} val={res} set={setRes} />
       </div>
-
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(90px,1fr))", gap: 8, marginBottom: 14 }}>
+        <Metric label="Scenáre" value={area.scenarios.length} />
+        <Metric label="Kroky ✓" value={cp} color={T.green} />
+        <Metric label="Kroky ~" value={cpart} color={T.amber} />
+        <Metric label="Kroky ✗" value={cf} color={T.red} />
+        <Metric label="Hotovo" value={pct + "%"} color={T.green} />
+      </div>
+      <div style={{ border: `1px solid ${T.borderSoft}`, borderRadius: 10, overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "70px 1fr 70px 60px 60px 100px", gap: 8, padding: "7px 12px", background: T.panel2, borderBottom: `1px solid ${T.borderSoft}`, fontSize: 10, color: T.dim, textTransform: "uppercase" }}>
+          <span>ID</span><span>Scenár</span><span>Postup</span><span>K1</span><span>RUR</span><span>Stav</span>
+        </div>
+        {scen.map((s, i) => <ClScenario key={s.id} s={s} last={i === scen.length - 1} open={open === s.id} onToggle={() => setOpen(open === s.id ? null : s.id)} onUpdate={(fn) => setScen(s.id, fn)} onDelete={() => setArea((a) => ({ ...a, scenarios: a.scenarios.filter((x) => x.id !== s.id) }))} whoMatch={whoMatch} />)}
+        {scen.length === 0 && <div style={{ padding: 16, color: T.dim, fontSize: 12.5, textAlign: "center" }}>Žiadne scenáre pre tento filter.</div>}
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+        <span style={{ fontSize: 10.5, color: T.dim }}>Pri kroku prepni ✓ prešiel / ~ čiastočne / ✗ neprešiel (+ RO re-open), nastav kto, bug a dôvod. Stav scenára sa dopočíta.</span>
+        {areas.length > 0 && <span onClick={addScen} style={{ fontSize: 11.5, color: T.green, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}><Plus size={13} />scenár</span>}
+      </div>
+    </div>
+  );
+}
+function ClScenario({ s, last, open, onToggle, onUpdate, onDelete, whoMatch }) {
+  const steps = s.steps || [];
+  const done = steps.filter((x) => x.check === "pass").length;
+  const roll = clRollup(s);
+  const sel = { background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 6, padding: "2px 5px", color: T.text, fontSize: 10.5, appearance: "auto", outline: "none" };
+  const stop = (e) => e.stopPropagation();
+  const addStep = () => onUpdate((x) => ({ ...x, steps: [...(x.steps || []), { id: uid(), krok: String((x.steps || []).length + 1), who: "ALZA", check: "", reopened: false, control: "", action: "", bug: "", blockedBy: "", note: "" }] }));
+  return (
+    <div style={{ borderBottom: last && !open ? "none" : `1px solid ${T.borderSoft}` }}>
+      <div onClick={onToggle} style={{ display: "grid", gridTemplateColumns: "70px 1fr 70px 60px 60px 100px", gap: 8, padding: "9px 12px", alignItems: "center", cursor: "pointer", background: open ? T.panel : "transparent" }}>
+        <span style={{ fontSize: 11, fontFamily: "ui-monospace,monospace", color: T.text, display: "flex", alignItems: "center", gap: 4 }}>{open ? <ChevronDown size={14} color={T.green} /> : <ChevronRight size={14} color={T.muted} />}{s.code}</span>
+        <span style={{ fontSize: 12, fontWeight: open ? 500 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
+        <span style={{ fontSize: 11, color: T.muted }}>{done}/{steps.length}</span>
+        <span onClick={stop}><select value={s.k1 || ""} onChange={(e) => onUpdate((x) => ({ ...x, k1: e.target.value }))} style={{ ...sel, color: RES_COLOR[s.k1] || T.muted }}>{RES_OPTS.map((o) => <option key={o} value={o}>{o || "—"}</option>)}</select></span>
+        <span onClick={stop}><select value={s.rur || ""} onChange={(e) => onUpdate((x) => ({ ...x, rur: e.target.value }))} style={{ ...sel, color: RES_COLOR[s.rur] || T.muted }}>{RES_OPTS.map((o) => <option key={o} value={o}>{o || "—"}</option>)}</select></span>
+        <span><Pill bg={ROLL_COLOR[roll]} fg={roll === "Čaká" ? T.text : "#08160c"}>{roll}</Pill></span>
+      </div>
+      {open && (
+        <div style={{ background: T.panel2, borderTop: `1px solid ${T.borderSoft}`, padding: "10px 12px 12px" }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10, alignItems: "center" }}>
+            <span style={{ fontSize: 11, color: T.muted }}>Fáza</span>
+            <select value={s.phase || "F0"} onChange={(e) => onUpdate((x) => ({ ...x, phase: e.target.value }))} style={sel}>{PHASE_OPTS.map((o) => <option key={o}>{o}</option>)}</select>
+            <span style={{ fontSize: 11, color: T.muted }}>Kedy to bude</span>
+            <input value={s.when || ""} onChange={(e) => onUpdate((x) => ({ ...x, when: e.target.value }))} placeholder="termín…" style={{ ...sel, fontSize: 11.5, width: 140 }} />
+            <span onClick={onDelete} style={{ marginLeft: "auto", fontSize: 11, color: T.red, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}><Trash2 size={12} />scenár</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "42px 118px 96px 1fr 150px 30px", gap: 8, padding: "4px 6px", fontSize: 9.5, color: T.dim, textTransform: "uppercase" }}>
+            <span>Krok</span><span>Stav</span><span>Kto</span><span>Kontrolný bod / akcia</span><span>Bug · dôvod</span><span></span>
+          </div>
+          {steps.map((st) => <ClStep key={st.id} st={st} dim={!whoMatch(st)} onUpdate={(fn) => onUpdate((x) => ({ ...x, steps: x.steps.map((y) => (y.id === st.id ? fn(y) : y)) }))} onDel={() => onUpdate((x) => ({ ...x, steps: x.steps.filter((y) => y.id !== st.id) }))} />)}
+          <div style={{ padding: "7px 6px 0" }}><span onClick={addStep} style={{ fontSize: 10.5, color: T.green, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}><Plus size={12} />pridať krok</span></div>
+        </div>
+      )}
+    </div>
+  );
+}
+function ClStep({ st, dim, onUpdate, onDel }) {
+  const inp = { background: T.panel, border: `1px solid ${T.border}`, borderRadius: 6, padding: "4px 6px", color: T.text2, fontSize: 11, outline: "none", width: "100%", boxSizing: "border-box" };
+  const states = [["pass", "✓", T.green, "#0d3b1e"], ["partial", "~", T.amber, "#412402"], ["fail", "✗", T.red, "#501313"]];
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "42px 118px 96px 1fr 150px 30px", gap: 8, padding: "6px 6px", alignItems: "center", borderTop: `1px solid ${T.panel}`, opacity: dim ? .4 : 1 }}>
+      <input value={st.krok || ""} onChange={(e) => onUpdate((x) => ({ ...x, krok: e.target.value }))} style={{ ...inp, fontFamily: "ui-monospace,monospace", textAlign: "center" }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <span style={{ display: "inline-flex", border: `1px solid ${T.border}`, borderRadius: 6, overflow: "hidden" }}>
+          {states.map(([v, lbl, bg, fg]) => { const on = st.check === v; return <span key={v} onClick={() => onUpdate((x) => ({ ...x, check: on ? "" : v }))} style={{ padding: "3px 7px", fontSize: 11, cursor: "pointer", background: on ? bg : T.panel, color: on ? fg : T.dim, fontWeight: on ? 600 : 400 }}>{lbl}</span>; })}
+        </span>
+        <span onClick={() => onUpdate((x) => ({ ...x, reopened: !x.reopened }))} title="Re-opened" style={{ fontSize: 8, cursor: "pointer", color: st.reopened ? T.amber : T.dim, border: `1px solid ${st.reopened ? T.amber : T.border}`, borderRadius: 4, padding: "1px 3px" }}>RO</span>
+      </div>
+      <select value={st.who || ""} onChange={(e) => onUpdate((x) => ({ ...x, who: e.target.value }))} style={{ ...inp, appearance: "auto", fontSize: 10.5 }}>{WHO_OPTS.map((o) => <option key={o} value={o}>{o || "—"}</option>)}</select>
+      <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+        <input value={st.control || ""} onChange={(e) => onUpdate((x) => ({ ...x, control: e.target.value }))} placeholder="kontrolný bod…" style={inp} />
+        <input value={st.action || ""} onChange={(e) => onUpdate((x) => ({ ...x, action: e.target.value }))} placeholder="akcia…" style={{ ...inp, color: T.muted }} />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          {st.bug ? <LinkChip link={{ url: st.bug }} /> : null}
+          <input value={st.bug || ""} onChange={(e) => onUpdate((x) => ({ ...x, bug: e.target.value }))} placeholder="bug (LOG/KVD)" style={{ ...inp, fontSize: 10 }} />
+        </div>
+        <input value={st.note || ""} onChange={(e) => onUpdate((x) => ({ ...x, note: e.target.value }))} placeholder="dôvod / poznámka…" style={{ ...inp, color: st.note ? T.amber : T.muted, fontSize: 10.5 }} />
+      </div>
+      <Trash2 size={13} color={T.dim} style={{ cursor: "pointer" }} onClick={onDel} />
+    </div>
+  );
+}
+function ScenarioCatalog({ project, cat, fStatus, setFStatus, q, setQ, open, setOpen, setScen, rounds }) {
+  const all = (project.scenarios || []).filter((s) => s.category === cat);
+  const ql = q.trim().toLowerCase();
+  const scen = all.filter((s) => (fStatus === "all" || (s.status || "TBD") === fStatus) && (!ql || (s.name || "").toLowerCase().includes(ql) || (s.code || "").toLowerCase().includes(ql) || (s.process || "").toLowerCase().includes(ql)));
+  const byProc = {}; scen.forEach((s) => { (byProc[s.process || "—"] ||= []).push(s); });
+  const st = { total: scen.length, Done: scen.filter((s) => s.status === "Done").length, IT: scen.filter((s) => s.status === "IN TESTING").length, TBD: scen.filter((s) => (s.status || "TBD") === "TBD").length };
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, background: T.panel2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "5px 8px", flex: 1, minWidth: 150 }}>
+          <Search size={13} color={T.muted} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="hľadať scenár…" style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none", color: T.text, fontSize: 12 }} />
+        </div>
+        <Seg label="Stav" opts={[["all", "Všetky"], ["Done", "Hotové"], ["IN TESTING", "Testuje sa"], ["TBD", "Čaká"]]} val={fStatus} set={setFStatus} />
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(90px,1fr))", gap: 8, marginBottom: 14 }}>
         <Metric label="Scenáre" value={st.total} />
         <Metric label="Hotové" value={st.Done} color={T.green} />
         <Metric label="Testuje sa" value={st.IT} color={T.amber} />
         <Metric label="Čaká" value={st.TBD} color={T.slate} />
       </div>
-
       {Object.entries(byProc).map(([proc, list]) => (
         <div key={proc} style={{ marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: T.greenDeep }} /><span style={{ fontSize: 12.5, fontWeight: 500 }}>{proc}</span><span style={{ fontSize: 10.5, color: T.muted }}>{list.length}</span></div>
@@ -1040,10 +1180,10 @@ function Testovanie({ project, setProject }) {
         </div>
       ))}
       {scen.length === 0 && <div style={{ color: T.dim, fontSize: 12.5, padding: 14, textAlign: "center", border: `1px dashed ${T.border}`, borderRadius: 10 }}>Žiadne scenáre pre tento filter.</div>}
-      <div style={{ fontSize: 10.5, color: T.dim, marginTop: 6, display: "flex", alignItems: "center", gap: 5 }}><i></i>Status Done/IN TESTING/TBD je z Excelu. Pri rozkliknutí zapíšeš pokusy (čo sa reálne stalo) — aj cez re-test kolá.</div>
     </div>
   );
 }
+
 function Seg({ label, opts, val, set }) {
   return <div style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
     <span style={{ fontSize: 10.5, color: T.muted }}>{label}</span>
